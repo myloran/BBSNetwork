@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Unity.Entities;
 
-public class Syncing {
+public class SyncManager {
   public readonly SyncEntities SyncEntities = new SyncEntities();
   readonly Dictionary<Entity, SyncEntity> Entities = new Dictionary<Entity, SyncEntity>();
 

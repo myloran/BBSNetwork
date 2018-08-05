@@ -21,7 +21,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
   //private readonly Dictionary<Entity, NetworkSyncDataEntityContainer> ownEntityContainerMap = new Dictionary<Entity, NetworkSyncDataEntityContainer>();
   //private readonly List<NetworkMethodInfo<NetworkSyncFullStatedSystem>> ComponentDataMethods = new List<NetworkMethodInfo<NetworkSyncFullStatedSystem>>();
   static bool isLogging;
-  readonly Syncing networkSendMessageUtility = new Syncing();
+  readonly SyncManager networkSendMessageUtility = new SyncManager();
   readonly List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, NetworkComponent>> GetComponentDataMethods = new List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, NetworkComponent>>();
   NetworkMessageSerializer<SyncEntities> messageSerializer;
   int lastSend = Environment.TickCount & Int32.MaxValue;

@@ -35,8 +35,8 @@ public class NetworkSendSystem : ComponentSystem {
 
     //private readonly NetworkSyncDataContainer ownNetworkSyncDataContainer = new NetworkSyncDataContainer();
     //private readonly Dictionary<Entity, NetworkSyncDataEntityContainer> ownEntityContainerMap = new Dictionary<Entity, NetworkSyncDataEntityContainer>();
-    private readonly Syncing ownNetworkSendMessageUtility = new Syncing();
-    internal static readonly Syncing AllNetworkSendMessageUtility = new Syncing();
+    private readonly SyncManager ownNetworkSendMessageUtility = new SyncManager();
+    internal static readonly SyncManager AllNetworkSendMessageUtility = new SyncManager();
 
 
     private readonly List<NetworkMethod<NetworkSendSystem>> AddedComponentsMethods = new List<NetworkMethod<NetworkSendSystem>>();
