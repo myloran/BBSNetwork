@@ -275,6 +275,7 @@ internal static class NetworkMemberInfoUtility {
   }
 }
 
+//TODO: Make one instance
 internal class ReflectionUtility {
   public readonly ComponentType[] ComponentTypes;
   Dictionary<ComponentType, NetworkField[]> cashedFields = new Dictionary<ComponentType, NetworkField[]>();
@@ -426,11 +427,11 @@ internal class ReflectionUtility {
       : (member as PropertyInfo).PropertyType;
   }
 
-  public void RegisterSpawn(int id, SpawnDelegate networkInstantiationHandler) {
-    entityFactoryMethodMap.Add(id, networkInstantiationHandler);
+  void RegisterSpawn(int id, SpawnDelegate spawn) {
+    entityFactoryMethodMap.Add(id, spawn);
   }
 
-  public SpawnDelegate GetEntityFactoryMethod(int id) {
+  public SpawnDelegate GetSpawn(int id) {
     try {
       return entityFactoryMethodMap[id];
     } catch {
@@ -438,19 +439,19 @@ internal class ReflectionUtility {
     }
   }
 
-  public NetworkField[] GetNetworkMemberInfo(ComponentType componentType) {
-    return cashedFields[componentType];
+  public NetworkField[] GetFields(ComponentType type) {
+    return cashedFields[type];
   }
 
-  public int GetComponentTypeID(ComponentType componentType) {
-    return typeIds[componentType];
+  public int GetId(ComponentType type) {
+    return typeIds[type];
   }
 
-  public ComponentType GetComponentType(int id) {
+  public ComponentType GetType(int id) {
     return idTypes[id];
   }
 
-  public int GetNumberOfMembers(Type componentType) {
-    return FieldCounts[componentType];
+  public int GetFieldCount(Type type) {
+    return FieldCounts[type];
   }
 }

@@ -147,7 +147,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       if (addedEntities[i].Id.ActorId == networkManager.LocalPlayerID) continue;
 
       var addedEntity = reflectionUtility
-        .GetEntityFactoryMethod(addedEntities[i].InstanceId)
+        .GetSpawn(addedEntities[i].InstanceId)
         .Invoke(EntityManager);
 
       var state = new SyncState {
@@ -159,7 +159,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       var componentData = addedEntities[i].Components;
       for (int j = 0; j < componentData.Count; j++) {
         var componentType = reflectionUtility
-          .GetComponentType(componentData[j].TypeId);
+          .GetType(componentData[j].TypeId);
         AddComponentsMethods[componentType]
           .Invoke(this, addedEntity, componentData[j].Fields);
       }
@@ -203,15 +203,15 @@ public class NetworkReceiveSystem : ComponentSystem {
       var removedComponents = updateEntities[i].RemovedComponents;
       var componentData = updateEntities[i].Components;
       for (int j = 0; j < addedComponents.Count; j++) {
-        var componentType = reflectionUtility.GetComponentType(addedComponents[j].TypeId);
+        var componentType = reflectionUtility.GetType(addedComponents[j].TypeId);
         AddComponentsMethods[componentType].Invoke(this, entity, addedComponents[j].Fields);
       }
       for (int j = 0; j < componentData.Count; j++) {
-        var componentType = reflectionUtility.GetComponentType(componentData[j].TypeId);
+        var componentType = reflectionUtility.GetType(componentData[j].TypeId);
         SetComponentsMethods[componentType].Invoke(this, entity, componentData[j].Fields);
       }
       for (int j = 0; j < removedComponents.Count; j++) {
-        var componentType = reflectionUtility.GetComponentType(removedComponents[j]);
+        var componentType = reflectionUtility.GetType(removedComponents[j]);
         RemoveComponentsMethods[componentType].Invoke(this, entity);
       }
       if (updateEntity.ActorId == networkManager.LocalPlayerID) continue;
@@ -232,8 +232,8 @@ public class NetworkReceiveSystem : ComponentSystem {
 
   void AddComponent<T>(Entity entity, List<ComponentField> memberDataContainers) where T : struct, IComponentData {
     //Debug.Log(typeof(T));
-    int numberOfMembers = reflectionUtility.GetNumberOfMembers(typeof(T));
-    var infos = reflectionUtility.GetNetworkMemberInfo(ComponentType.Create<T>());
+    int numberOfMembers = reflectionUtility.GetFieldCount(typeof(T));
+    var infos = reflectionUtility.GetFields(ComponentType.Create<T>());
     if (!EntityManager.HasComponent<T>(entity)) {
       T component = new T();
       for (int i = 0; i < memberDataContainers.Count; i++) {
@@ -292,7 +292,7 @@ public class NetworkReceiveSystem : ComponentSystem {
     var entities = group.GetEntityArray();
     var components = group.GetComponentDataArray<T>();
     var states = group.GetComponentDataArray<NetworkComponentState<T>>();
-    var infos = reflectionUtility.GetNetworkMemberInfo(ComponentType.Create<T>());
+    var infos = reflectionUtility.GetFields(ComponentType.Create<T>());
 
     for (int i = 0; i < entities.Length; i++) {
       T component = components[i];
