@@ -3,7 +3,7 @@ using Unity.Entities;
 using UnityEngine;
 
 [Serializable]
-[NetSync]
+[Sync]
 public struct WeaponState : IComponentData {
     [HideInInspector] public float fireTimer;
     [HideInInspector] public float reloadTimer;

@@ -1,7 +1,7 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 
-[NetSync]
+[Sync]
 public struct Position : IComponentData {
     [FieldSync(lerpDamp: 0.9f, jumpThreshold: 0)]
     [NetSyncSubMember("x")]

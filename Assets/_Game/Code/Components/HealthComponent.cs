@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.Entities;
 
-[NetSync]
+[Sync]
 [Serializable]
 public struct Health : IComponentData {
 

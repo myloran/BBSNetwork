@@ -1,7 +1,7 @@
 ﻿using Unity.Entities;
 
 //[Serializable]
-[NetSync]
+[Sync]
 public struct DeathComponent : IComponentData {
     [FieldSync(initOnly: true)]
     public float timer;

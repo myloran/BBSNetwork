@@ -296,7 +296,7 @@ internal class ReflectionUtility {
       types.Sort((x, y) => x.Name.CompareTo(y.Name));
 
       foreach (var type in types) {
-        if (type.GetCustomAttribute<NetSyncAttribute>() != null) {
+        if (type.GetCustomAttribute<SyncAttribute>() != null) {
           id++;
           var fields = FindFields(type);
           typeIds.Add(type, id);
@@ -406,7 +406,7 @@ internal class ReflectionUtility {
     List<Type> types = new List<Type>(assembly.GetTypes());
     types.Sort((x, y) => x.Name.CompareTo(y.Name));
     foreach (Type type in types) {
-      if (type.GetCustomAttribute<NetSyncAttribute>() != null) {
+      if (type.GetCustomAttribute<SyncAttribute>() != null) {
         componentTypeId++;
         typeIds.Add(type, componentTypeId);
         idTypes.Add(componentTypeId, type);

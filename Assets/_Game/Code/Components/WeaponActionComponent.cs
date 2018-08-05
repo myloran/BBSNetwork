@@ -2,7 +2,7 @@
 using UnityEngine;
 
 //[Serializable]
-[NetSync]
+[Sync]
 public struct WeaponAction : IComponentData {
     [FieldSync]
     public boolean fire;

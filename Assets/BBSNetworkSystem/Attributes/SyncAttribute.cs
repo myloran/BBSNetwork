@@ -4,4 +4,4 @@
 /// It's required to all structs that will contains  <see cref="FieldSyncAttribute"/>
 /// </summary>
 [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-public sealed class NetSyncAttribute : Attribute { }
+public sealed class SyncAttribute : Attribute { }
