@@ -237,24 +237,40 @@ internal sealed class NetworkInOutMethodInfo<T, RefParam, OutParam> {
 
 
 internal static class NetworkMemberInfoUtility {
+
   public static RefFunc<S, T> CreateGetter<S, T>(FieldInfo field) {
-    ParameterExpression instance = Expression.Parameter(typeof(S).MakeByRefType(), "instance");
-    MemberExpression memberAccess = Expression.MakeMemberAccess(instance, field);
-    Expression<RefFunc<S, T>> expr =
-        Expression.Lambda<RefFunc<S, T>>(memberAccess, instance);
+    var instance = Expression.Parameter(
+      typeof(S).MakeByRefType(), 
+      "instance");
+
+    var memberAccess = Expression.MakeMemberAccess(
+      instance, 
+      field);
+
+    var expr = Expression.Lambda<RefFunc<S, T>>(
+      memberAccess, 
+      instance);
+
     return expr.Compile();
   }
 
   public static RefAction<S, T> CreateSetter<S, T>(FieldInfo field) {
-    ParameterExpression instance = Expression.Parameter(typeof(S).MakeByRefType(), "instance");
-    ParameterExpression value = Expression.Parameter(typeof(T), "value");
-    Expression<RefAction<S, T>> expr =
-      Expression.Lambda<RefAction<S, T>>(
-        Expression.Assign(
-          Expression.Field(instance, field),
-          Expression.Convert(value, field.FieldType)),
-        instance,
-        value);
+    var instance = Expression.Parameter(
+      typeof(S).MakeByRefType(), 
+      "instance");
+
+    var value = Expression.Parameter(
+      typeof(T), 
+      "value");
+
+    var assign = Expression.Assign(
+      Expression.Field(instance, field),
+      Expression.Convert(value, field.FieldType));
+
+    var expr = Expression.Lambda<RefAction<S, T>>(
+      assign, 
+      instance, 
+      value);
 
     return expr.Compile();
   }
