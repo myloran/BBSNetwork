@@ -13,7 +13,7 @@ public class NetworkSendMessageUtility {
     Container.RemovedEntities.Add(networkSyncEntity);
   }
 
-  public void AddComponent(Entity entity, int actorId, int networkId, Components componentData) {
+  public void AddComponent(Entity entity, int actorId, int networkId, NetworkComponent componentData) {
     GetEntity(entity, actorId, networkId)
       .AddedComponents.Add(componentData);
   }
@@ -23,12 +23,12 @@ public class NetworkSendMessageUtility {
       .RemovedComponents.Add(componentId);
   }
 
-  public void SetComponentData(Entity entity, int actorId, int networkId, Components componentDataContainer) {
+  public void SetComponentData(Entity entity, int actorId, int networkId, NetworkComponent componentDataContainer) {
     GetEntity(entity, actorId, networkId)
       .Components.Add(componentDataContainer);
   }
 
-  public void AddComponents(Entity entity, int actorId, int networkId, List<Components> componentIds) {
+  public void AddComponents(Entity entity, int actorId, int networkId, List<NetworkComponent> componentIds) {
     GetEntity(entity, actorId, networkId)
       .AddedComponents.AddRange(componentIds);
   }
@@ -38,7 +38,7 @@ public class NetworkSendMessageUtility {
       .RemovedComponents.AddRange(componentIds);
   }
 
-  public void SetComponentData(Entity entity, int actorId, int networkId, List<Components> componentDataContainers) {
+  public void SetComponentData(Entity entity, int actorId, int networkId, List<NetworkComponent> componentDataContainers) {
     GetEntity(entity, actorId, networkId)
       .Components.AddRange(componentDataContainers);
   }

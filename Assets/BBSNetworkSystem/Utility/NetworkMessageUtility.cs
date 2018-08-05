@@ -23,10 +23,10 @@ static class NetworkMessageUtility {
             if (networkSyncDataEntityContainer.AddedComponents.Any()) {
                 stringBuilder.AppendLine();
             }
-            foreach (Components componentDataContainer in networkSyncDataEntityContainer.AddedComponents) {
+            foreach (NetworkComponent componentDataContainer in networkSyncDataEntityContainer.AddedComponents) {
                 stringBuilder.AppendLine(string.Format("{0}componentDataContainer: ", new String(' ', tab2)) + "{");
-                stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.ComponentTypeId));
-                stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.MemberData.Select(x => x.Data))));
+                stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.TypeId));
+                stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.Fields.Select(x => x.Value))));
                 stringBuilder.AppendLine(string.Format("{0}", new String(' ', tab2)));
             }
             if (networkSyncDataEntityContainer.AddedComponents.Any()) {
@@ -40,10 +40,10 @@ static class NetworkMessageUtility {
             if (networkSyncDataEntityContainer.Components.Any()) {
                 stringBuilder.AppendLine();
             }
-            foreach (Components componentDataContainer in networkSyncDataEntityContainer.Components) {
+            foreach (NetworkComponent componentDataContainer in networkSyncDataEntityContainer.Components) {
                 stringBuilder.AppendLine(string.Format("{0}ComponentDataContainer: ", new String(' ', tab2)) + "{");
-                stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.ComponentTypeId));
-                stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.MemberData.Select(x=>x.Data))));
+                stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.TypeId));
+                stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.Fields.Select(x=>x.Value))));
                 stringBuilder.AppendLine(string.Format("{0}", new String(' ', tab2))+"}");
             }
             if (networkSyncDataEntityContainer.Components.Any()) {
@@ -57,21 +57,21 @@ static class NetworkMessageUtility {
         foreach (NetworkEntityData networkEntityData in networkDataContainer.AddedEntities) {
             stringBuilder.AppendLine(string.Format("{0}NetworkEntityData: ", new String(' ', tab1)) + "{");
             stringBuilder.AppendLine(string.Format("{0}NetworkSyncEntity: ", new String(' ', tab2)) + "{");
-            stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab3), networkEntityData.NetworkSyncEntity.NetworkId));
-            stringBuilder.AppendLine(string.Format("{0}ActorId: {1}", new String(' ', tab3), networkEntityData.NetworkSyncEntity.ActorId));
+            stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab3), networkEntityData.Id.NetworkId));
+            stringBuilder.AppendLine(string.Format("{0}ActorId: {1}", new String(' ', tab3), networkEntityData.Id.ActorId));
             stringBuilder.AppendLine(string.Format("{0}", new String(' ', tab2))+ "}");
 
             stringBuilder.Append(string.Format("{0}ComponentData: [ ", new String(' ', tab1)));
-            if (networkEntityData.ComponentData.Any()) {
+            if (networkEntityData.Components.Any()) {
                 stringBuilder.AppendLine();
             }
-            foreach (Components componentDataContainer in networkEntityData.ComponentData) {
+            foreach (NetworkComponent componentDataContainer in networkEntityData.Components) {
                 stringBuilder.AppendLine(string.Format("{0}ComponentDataContainer: ", new String(' ', tab2)) + "{");
-                stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.ComponentTypeId));
-                stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.MemberData.Select(x => x.Data))));
+                stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.TypeId));
+                stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.Fields.Select(x => x.Value))));
                 stringBuilder.AppendLine(string.Format("{0}", new String(' ', tab2)) + "}");
             }
-            if (networkEntityData.ComponentData.Any()) {
+            if (networkEntityData.Components.Any()) {
                 stringBuilder.Append(new String(' ', tab1));
             }
             stringBuilder.AppendLine("]");

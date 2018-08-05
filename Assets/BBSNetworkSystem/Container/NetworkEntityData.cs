@@ -7,8 +7,8 @@ public class NetworkEntityData {
     public int InstanceId;
 
     [ProtoMember(2, DataFormat = DataFormat.ZigZag)]
-    public EntityId NetworkSyncEntity;
+    public EntityId Id;
     
     [ProtoMember(3, DataFormat = DataFormat.ZigZag)]
-    public List<Components> ComponentData = new List<Components>(100);
+    public List<NetworkComponent> Components = new List<NetworkComponent>(100);
 }

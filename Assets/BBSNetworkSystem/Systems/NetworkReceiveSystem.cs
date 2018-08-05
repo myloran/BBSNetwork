@@ -14,9 +14,9 @@ public class NetworkReceiveSystem : ComponentSystem {
   const float DeltaTimeMessage = NetworkSendSystem.SendInterval / 1000f;
   NetworkMessageSerializer<NetworkSyncDataContainer> messageSerializer;
   INetworkManager networkManager;
-  readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<MemberDataContainer>>> AddComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<MemberDataContainer>>>();
+  readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>> AddComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>>();
   readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity>> RemoveComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity>>();
-  readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<MemberDataContainer>>> SetComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<MemberDataContainer>>>();
+  readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>> SetComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>>();
   readonly List<NetworkMethodInfo<NetworkReceiveSystem, Entity>> RemoveComponentOnDestroyEntityMethods = new List<NetworkMethodInfo<NetworkReceiveSystem, Entity>>();
   readonly List<NetworkMethodInfo<NetworkReceiveSystem>> UpdateComponentsMethods = new List<NetworkMethodInfo<NetworkReceiveSystem>>();
   NetworkFactory networkFactory;
@@ -30,7 +30,7 @@ public class NetworkReceiveSystem : ComponentSystem {
 
     for (int i = 0; i < types.Length; i++) {
       var addMethod = GetMethod(types[i], type, "AddComponent");
-      var addInfo = new NetworkMethodInfo<NetworkReceiveSystem, Entity, List<MemberDataContainer>>(addMethod);
+      var addInfo = new NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>(addMethod);
       AddComponentsMethods.Add(types[i], addInfo);
 
       var removeMethod = GetMethod(types[i], type, "RemoveComponent");
@@ -38,7 +38,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       RemoveComponentsMethods.Add(types[i], removeInfo);
 
       var setMethod = GetMethod(types[i], type, "SetComponent");
-      var setInfo = new NetworkMethodInfo<NetworkReceiveSystem, Entity, List<MemberDataContainer>>(setMethod);
+      var setInfo = new NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>(setMethod);
       SetComponentsMethods.Add(types[i], setInfo);
 
       var updateMethod = GetMethod(types[i], type, "UpdateComponent");
@@ -144,26 +144,26 @@ public class NetworkReceiveSystem : ComponentSystem {
 
     var addedEntities = container.AddedEntities;
     for (int i = 0; i < addedEntities.Count; i++) {
-      if (addedEntities[i].NetworkSyncEntity.ActorId == networkManager.LocalPlayerID) continue;
+      if (addedEntities[i].Id.ActorId == networkManager.LocalPlayerID) continue;
 
       var addedEntity = reflectionUtility
         .GetEntityFactoryMethod(addedEntities[i].InstanceId)
         .Invoke(EntityManager);
 
       var state = new NetworkSyncState {
-        actorId = addedEntities[i].NetworkSyncEntity.ActorId,
-        networkId = addedEntities[i].NetworkSyncEntity.NetworkId,
+        actorId = addedEntities[i].Id.ActorId,
+        networkId = addedEntities[i].Id.NetworkId,
       };
       PostUpdateCommands.AddComponent(addedEntity, state);
 
-      var componentData = addedEntities[i].ComponentData;
+      var componentData = addedEntities[i].Components;
       for (int j = 0; j < componentData.Count; j++) {
         var componentType = reflectionUtility
-          .GetComponentType(componentData[j].ComponentTypeId);
+          .GetComponentType(componentData[j].TypeId);
         AddComponentsMethods[componentType]
-          .Invoke(this, addedEntity, componentData[j].MemberData);
+          .Invoke(this, addedEntity, componentData[j].Fields);
       }
-      if (addedEntities[i].NetworkSyncEntity.ActorId != networkManager.LocalPlayerID)
+      if (addedEntities[i].Id.ActorId != networkManager.LocalPlayerID)
         NetworkSendSystem.AllNetworkSendMessageUtility.AddEntity(addedEntities[i]);
     }
 
@@ -203,12 +203,12 @@ public class NetworkReceiveSystem : ComponentSystem {
       var removedComponents = updateEntities[i].RemovedComponents;
       var componentData = updateEntities[i].Components;
       for (int j = 0; j < addedComponents.Count; j++) {
-        var componentType = reflectionUtility.GetComponentType(addedComponents[j].ComponentTypeId);
-        AddComponentsMethods[componentType].Invoke(this, entity, addedComponents[j].MemberData);
+        var componentType = reflectionUtility.GetComponentType(addedComponents[j].TypeId);
+        AddComponentsMethods[componentType].Invoke(this, entity, addedComponents[j].Fields);
       }
       for (int j = 0; j < componentData.Count; j++) {
-        var componentType = reflectionUtility.GetComponentType(componentData[j].ComponentTypeId);
-        SetComponentsMethods[componentType].Invoke(this, entity, componentData[j].MemberData);
+        var componentType = reflectionUtility.GetComponentType(componentData[j].TypeId);
+        SetComponentsMethods[componentType].Invoke(this, entity, componentData[j].Fields);
       }
       for (int j = 0; j < removedComponents.Count; j++) {
         var componentType = reflectionUtility.GetComponentType(removedComponents[j]);
@@ -230,14 +230,14 @@ public class NetworkReceiveSystem : ComponentSystem {
     return (int)unchecked(math.pow(actorId, networkId));
   }
 
-  void AddComponent<T>(Entity entity, List<MemberDataContainer> memberDataContainers) where T : struct, IComponentData {
+  void AddComponent<T>(Entity entity, List<ComponentField> memberDataContainers) where T : struct, IComponentData {
     //Debug.Log(typeof(T));
     int numberOfMembers = reflectionUtility.GetNumberOfMembers(typeof(T));
     var infos = reflectionUtility.GetNetworkMemberInfo(ComponentType.Create<T>());
     if (!EntityManager.HasComponent<T>(entity)) {
       T component = new T();
       for (int i = 0; i < memberDataContainers.Count; i++) {
-        int value = memberDataContainers[i].Data;
+        int value = memberDataContainers[i].Value;
         (infos[i] as NetworkMemberInfo<T>)
           .SetValue(ref component, value, value, Time.deltaTime, NetworkSendSystem.SendInterval);
       }
@@ -249,8 +249,8 @@ public class NetworkReceiveSystem : ComponentSystem {
     var values = networkFactory.NetworkEntityManager.GetFixedArray<int>(syncEntity);
     for (int i = 0; i < memberDataContainers.Count; i++) {
       int index = i * 2;
-      values[index] = memberDataContainers[i].Data;
-      values[index + 1] = memberDataContainers[i].Data;
+      values[index] = memberDataContainers[i].Value;
+      values[index + 1] = memberDataContainers[i].Value;
     }
     PostUpdateCommands.AddComponent(entity, new NetworkComponentState<T>());
   }
@@ -274,16 +274,16 @@ public class NetworkReceiveSystem : ComponentSystem {
     }
   }
 
-  void SetComponent<T>(Entity entity, List<MemberDataContainer> memberDataContainers) {
+  void SetComponent<T>(Entity entity, List<ComponentField> memberDataContainers) {
     if (!EntityManager.HasComponent<NetworkComponentState<T>>(entity)) return;
 
     var dataEntity = EntityManager.GetComponentData<NetworkComponentState<T>>(entity).dataEntity;
     var values = EntityManager.GetFixedArray<int>(dataEntity);
 
     for (int i = 0; i < memberDataContainers.Count; i++) {
-      int index = memberDataContainers[i].MemberId * 2;
+      int index = memberDataContainers[i].Id * 2;
       values[index] = values[index + 1];
-      values[index + 1] = memberDataContainers[i].Data;
+      values[index + 1] = memberDataContainers[i].Value;
     }
   }
 
