@@ -301,8 +301,8 @@ public class NetworkSendSystem : ComponentSystem {
 
             if (componentDataContainer.Fields.Count != 0) {
                 NetworkSyncState networkSyncState = networkSyncStateComponents[i];
-                ownNetworkSendMessageUtility.SetComponentData(entities[i], networkSyncState.actorId, networkSyncState.networkId, componentDataContainer);
-                AllNetworkSendMessageUtility.SetComponentData(entities[i], networkSyncState.actorId, networkSyncState.networkId, componentDataContainer);
+                ownNetworkSendMessageUtility.SetComponent(entities[i], networkSyncState.actorId, networkSyncState.networkId, componentDataContainer);
+                AllNetworkSendMessageUtility.SetComponent(entities[i], networkSyncState.actorId, networkSyncState.networkId, componentDataContainer);
             }
         }
     }

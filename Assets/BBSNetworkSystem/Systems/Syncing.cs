@@ -23,7 +23,7 @@ public class Syncing {
       .RemovedComponents.Add(componentId);
   }
 
-  public void SetComponentData(Entity entity, int actorId, int networkId, NetworkComponent component) {
+  public void SetComponent(Entity entity, int actorId, int networkId, NetworkComponent component) {
     GetEntity(entity, actorId, networkId)
       .Components.Add(component);
   }
@@ -38,7 +38,7 @@ public class Syncing {
       .RemovedComponents.AddRange(componentIds);
   }
 
-  public void SetComponentData(Entity entity, int actorId, int networkId, List<NetworkComponent> components) {
+  public void SetComponent(Entity entity, int actorId, int networkId, List<NetworkComponent> components) {
     GetEntity(entity, actorId, networkId)
       .Components.AddRange(components);
   }

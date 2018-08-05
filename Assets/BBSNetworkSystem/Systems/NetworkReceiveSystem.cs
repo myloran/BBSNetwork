@@ -220,7 +220,7 @@ public class NetworkReceiveSystem : ComponentSystem {
         entity, updateEntity.ActorId, updateEntity.NetworkId, addedComponents);
       NetworkSendSystem.AllNetworkSendMessageUtility.RemoveComponents(
         entity, updateEntity.ActorId, updateEntity.NetworkId, removedComponents);
-      NetworkSendSystem.AllNetworkSendMessageUtility.SetComponentData(
+      NetworkSendSystem.AllNetworkSendMessageUtility.SetComponent(
         entity, updateEntity.ActorId, updateEntity.NetworkId, componentData);
     }
     map.Dispose();
