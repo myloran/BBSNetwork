@@ -21,16 +21,16 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
   //private readonly Dictionary<Entity, NetworkSyncDataEntityContainer> ownEntityContainerMap = new Dictionary<Entity, NetworkSyncDataEntityContainer>();
   //private readonly List<NetworkMethodInfo<NetworkSyncFullStatedSystem>> ComponentDataMethods = new List<NetworkMethodInfo<NetworkSyncFullStatedSystem>>();
   static bool isLogging;
-  readonly NetworkSendMessageUtility networkSendMessageUtility = new NetworkSendMessageUtility();
+  readonly Syncing networkSendMessageUtility = new Syncing();
   readonly List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, NetworkComponent>> GetComponentDataMethods = new List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, NetworkComponent>>();
-  NetworkMessageSerializer<NetworkSyncDataContainer> messageSerializer;
+  NetworkMessageSerializer<SyncEntities> messageSerializer;
   int lastSend = Environment.TickCount & Int32.MaxValue;
   INetworkManager networkManager;
   readonly List<int> jonedPlayer = new List<int>();
   readonly ReflectionUtility reflectionUtility = new ReflectionUtility();
 
   protected override void OnCreateManager(int capacity) {
-    messageSerializer = new NetworkMessageSerializer<NetworkSyncDataContainer>();
+    messageSerializer = new NetworkMessageSerializer<SyncEntities>();
     ComponentType[] componentTypes = reflectionUtility.ComponentTypes;
     GetComponentGroup(typeof(NetworkSync));
     Type networkSystemType = typeof(NetworkSyncFullStatedSystem);
@@ -129,9 +129,9 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
       Receiver = NetworkReceiverGroup.Target,
     };
     if (isLogging) {
-      Debug.Log("SendFullState:\n" + NetworkMessageUtility.ToString(networkSendMessageUtility.Container));
+      Debug.Log("SendFullState:\n" + NetworkMessageUtility.ToString(networkSendMessageUtility.SyncEntities));
     }
-    networkManager.SendMessage(NetworkEvents.DataSync, messageSerializer.Serialize(networkSendMessageUtility.Container), true, networkEventOptions);
+    networkManager.SendMessage(NetworkEvents.DataSync, messageSerializer.Serialize(networkSendMessageUtility.SyncEntities), true, networkEventOptions);
     networkSendMessageUtility.Reset();
   }
 

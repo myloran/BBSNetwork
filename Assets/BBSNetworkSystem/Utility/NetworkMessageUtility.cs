@@ -9,7 +9,7 @@ static class NetworkMessageUtility {
     private const int tab2 = 8;
     private const int tab3 = 12;
 
-    public static string ToString(NetworkSyncDataContainer networkDataContainer) {
+    public static string ToString(SyncEntities networkDataContainer) {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("NetworkSyncDataEntityContainers: {");
@@ -54,7 +54,7 @@ static class NetworkMessageUtility {
         stringBuilder.AppendLine("}");
         stringBuilder.AppendLine();
         stringBuilder.AppendLine("AddedNetworkSyncEntities: {");
-        foreach (NetworkEntity networkEntityData in networkDataContainer.AddedEntities) {
+        foreach (NetworkEntity networkEntityData in networkDataContainer.Added) {
             stringBuilder.AppendLine(string.Format("{0}NetworkEntityData: ", new String(' ', tab1)) + "{");
             stringBuilder.AppendLine(string.Format("{0}NetworkSyncEntity: ", new String(' ', tab2)) + "{");
             stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab3), networkEntityData.Id.NetworkId));
@@ -80,7 +80,7 @@ static class NetworkMessageUtility {
         stringBuilder.AppendLine("}");
         stringBuilder.AppendLine();
         stringBuilder.AppendLine("AddedNetworkSyncEntities: {");
-        foreach (EntityId networkSyncEntity in networkDataContainer.RemovedEntities) {
+        foreach (EntityId networkSyncEntity in networkDataContainer.Removed) {
             stringBuilder.AppendLine(string.Format("{0}NetworkSyncEntity: ", new String(' ', tab1)) + "{");
             stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab2), networkSyncEntity.NetworkId));
             stringBuilder.AppendLine(string.Format("{0}ActorId: {1}", new String(' ', tab2), networkSyncEntity.ActorId));

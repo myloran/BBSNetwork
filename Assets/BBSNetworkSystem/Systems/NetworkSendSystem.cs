@@ -35,8 +35,8 @@ public class NetworkSendSystem : ComponentSystem {
 
     //private readonly NetworkSyncDataContainer ownNetworkSyncDataContainer = new NetworkSyncDataContainer();
     //private readonly Dictionary<Entity, NetworkSyncDataEntityContainer> ownEntityContainerMap = new Dictionary<Entity, NetworkSyncDataEntityContainer>();
-    private readonly NetworkSendMessageUtility ownNetworkSendMessageUtility = new NetworkSendMessageUtility();
-    internal static readonly NetworkSendMessageUtility AllNetworkSendMessageUtility = new NetworkSendMessageUtility();
+    private readonly Syncing ownNetworkSendMessageUtility = new Syncing();
+    internal static readonly Syncing AllNetworkSendMessageUtility = new Syncing();
 
 
     private readonly List<NetworkMethodInfo<NetworkSendSystem>> AddedComponentsMethods = new List<NetworkMethodInfo<NetworkSendSystem>>();
@@ -45,7 +45,7 @@ public class NetworkSendSystem : ComponentSystem {
     private readonly List<NetworkInOutMethodInfo<NetworkSendSystem, Entity, NetworkComponent>> AddComponentDataOnEntityAddedMethods = new List<NetworkInOutMethodInfo<NetworkSendSystem, Entity, NetworkComponent>>();
     private readonly List<NetworkMethodInfo<NetworkSendSystem, Entity>> RemoveComponentOnDestroyEntityMethods = new List<NetworkMethodInfo<NetworkSendSystem, Entity>>();
 
-    private NetworkMessageSerializer<NetworkSyncDataContainer> messageSerializer;
+    private NetworkMessageSerializer<SyncEntities> messageSerializer;
     private int lastSend = (Environment.TickCount - SendInterval) & Int32.MaxValue;
     private INetworkManager networkManager;
     internal const int SendInterval = 100;
@@ -55,7 +55,7 @@ public class NetworkSendSystem : ComponentSystem {
 
 
     protected override void OnCreateManager(int capacity) {
-        messageSerializer = new NetworkMessageSerializer<NetworkSyncDataContainer>();
+        messageSerializer = new NetworkMessageSerializer<SyncEntities>();
         ComponentType[] componentTypes = reflectionUtility.ComponentTypes;
         networkFactory = new NetworkFactory(EntityManager);
         Type networkSystemType = typeof(NetworkSendSystem);
@@ -311,29 +311,29 @@ public class NetworkSendSystem : ComponentSystem {
         NetworkEventOptions networkEventOptions = new NetworkEventOptions();
         byte[] data;
         if (networkManager.IsMaster) {
-            if (!AllNetworkSendMessageUtility.Container.AddedEntities.Any()
-                && !AllNetworkSendMessageUtility.Container.RemovedEntities.Any()
-                && !AllNetworkSendMessageUtility.Container.Entities.Any()) {
+            if (!AllNetworkSendMessageUtility.SyncEntities.Added.Any()
+                && !AllNetworkSendMessageUtility.SyncEntities.Removed.Any()
+                && !AllNetworkSendMessageUtility.SyncEntities.Entities.Any()) {
                 return;
             }
 
             networkEventOptions.Receiver = NetworkReceiverGroup.Others;
             if (LogSendMessages) {
-                LastSendMessage = NetworkMessageUtility.ToString(AllNetworkSendMessageUtility.Container);
+                LastSendMessage = NetworkMessageUtility.ToString(AllNetworkSendMessageUtility.SyncEntities);
             }
-            data = messageSerializer.Serialize(AllNetworkSendMessageUtility.Container);
+            data = messageSerializer.Serialize(AllNetworkSendMessageUtility.SyncEntities);
         } else {
-            if (!ownNetworkSendMessageUtility.Container.AddedEntities.Any()
-                && !ownNetworkSendMessageUtility.Container.RemovedEntities.Any()
-                && !ownNetworkSendMessageUtility.Container.Entities.Any()) {
+            if (!ownNetworkSendMessageUtility.SyncEntities.Added.Any()
+                && !ownNetworkSendMessageUtility.SyncEntities.Removed.Any()
+                && !ownNetworkSendMessageUtility.SyncEntities.Entities.Any()) {
                 return;
             }
 
             networkEventOptions.Receiver = NetworkReceiverGroup.MasterClient;
             if (LogSendMessages) {
-                LastSendMessage = NetworkMessageUtility.ToString(ownNetworkSendMessageUtility.Container);
+                LastSendMessage = NetworkMessageUtility.ToString(ownNetworkSendMessageUtility.SyncEntities);
             }
-            data = messageSerializer.Serialize(ownNetworkSendMessageUtility.Container);
+            data = messageSerializer.Serialize(ownNetworkSendMessageUtility.SyncEntities);
 
         }
         //Debug.Log("NetworkSendSystem:\n" + LastSendMessage);

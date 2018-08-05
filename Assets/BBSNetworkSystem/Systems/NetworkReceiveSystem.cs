@@ -12,7 +12,7 @@ using UnityEngine;
 public class NetworkReceiveSystem : ComponentSystem {
   public static bool LogReceivedMessages;
   const float DeltaTimeMessage = NetworkSendSystem.SendInterval / 1000f;
-  NetworkMessageSerializer<NetworkSyncDataContainer> messageSerializer;
+  NetworkMessageSerializer<SyncEntities> messageSerializer;
   INetworkManager networkManager;
   readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>> AddComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>>();
   readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity>> RemoveComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity>>();
@@ -49,7 +49,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       var destroyInfo = new NetworkMethodInfo<NetworkReceiveSystem, Entity>(destroyMethod);
       RemoveComponentOnDestroyEntityMethods.Add(destroyInfo);
     }
-    messageSerializer = new NetworkMessageSerializer<NetworkSyncDataContainer>();
+    messageSerializer = new NetworkMessageSerializer<SyncEntities>();
   }
 
   MethodInfo GetMethod(ComponentType componentType, Type type, string methodName) =>
@@ -127,8 +127,8 @@ public class NetworkReceiveSystem : ComponentSystem {
 
   void ReceiveNetworkUpdate(byte[] data) {
     var container = messageSerializer.Deserialize(data);
-    if (LogReceivedMessages && (container.AddedEntities.Any()
-        || container.RemovedEntities.Any()
+    if (LogReceivedMessages && (container.Added.Any()
+        || container.Removed.Any()
         || container.Entities.Any())) {
       Debug.Log("ReceiveNetworkUpdate: " + NetworkMessageUtility.ToString(container));
     }
@@ -142,7 +142,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       map.TryAdd(hash, i);
     }
 
-    var addedEntities = container.AddedEntities;
+    var addedEntities = container.Added;
     for (int i = 0; i < addedEntities.Count; i++) {
       if (addedEntities[i].Id.ActorId == networkManager.LocalPlayerID) continue;
 
@@ -168,7 +168,7 @@ public class NetworkReceiveSystem : ComponentSystem {
     }
 
     // removed Entities
-    var removedEntities = container.RemovedEntities;
+    var removedEntities = container.Removed;
     for (int i = 0; i < removedEntities.Count; i++) {
       if (removedEntities[i].ActorId == networkManager.LocalPlayerID) continue;
 
