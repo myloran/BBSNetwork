@@ -283,35 +283,49 @@ internal class ReflectionUtility {
   readonly Dictionary<ComponentType, int> FieldCounts = new Dictionary<ComponentType, int>();
   //public static readonly MethodInfo[] NetworkFactoryMethods;
   Dictionary<int, SpawnDelegate> entityFactoryMethodMap = new Dictionary<int, SpawnDelegate>();
+  byte id;
 
   public ReflectionUtility() {
-    byte id = 0;
-    var componentTypes = new List<ComponentType>();
     //var networkFactoryMethods = new List<MethodInfo>();
     var assemblies = new List<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
     assemblies.Sort((x, y) => x.FullName.CompareTo(y.FullName));
 
+    id = 0;
+    var types = new List<ComponentType>();
+
     foreach (var assembly in assemblies) {
-      var types = new List<Type>(assembly.GetTypes());
-      types.Sort((x, y) => x.Name.CompareTo(y.Name));
+      types.AddRange(
+        RegisterAttributes(assembly));
+    }
+    ComponentTypes = types.ToArray();
+    //NetworkFactoryMethods = networkFactoryMethods.ToArray();
+  }
 
-      foreach (var type in types) {
-        if (type.GetCustomAttribute<SyncAttribute>() != null) {
-          id++;
-          var fields = FindFields(type);
-          typeIds.Add(type, id);
-          idTypes.Add(id, type);
-          cashedFields.Add(type, fields.ToArray());
-          FieldCounts.Add(type, fields.Count);
-          componentTypes.Add(type);
-        }
+  public ReflectionUtility(Assembly assembly) {
+    id = 0;
+    ComponentTypes = RegisterAttributes(assembly).ToArray();
+  }
 
-        FindSpawns(type);
+  IList<ComponentType> RegisterAttributes(Assembly assembly) {
+    var types = new List<Type>(assembly.GetTypes());
+    types.Sort((x, y) => x.Name.CompareTo(y.Name));
+    var componentTypes = new List<ComponentType>();
+
+    foreach (var type in types) {
+      if (type.GetCustomAttribute<SyncAttribute>() != null) {
+        var fields = FindFields(type);
+        id++;
+        typeIds.Add(type, id);
+        idTypes.Add(id, type);
+        cashedFields.Add(type, fields.ToArray());
+        FieldCounts.Add(type, fields.Count);
+        componentTypes.Add(type);
       }
+
+      FindSpawns(type);
     }
 
-    ComponentTypes = componentTypes.ToArray();
-    //NetworkFactoryMethods = networkFactoryMethods.ToArray();
+    return componentTypes;
   }
 
   void FindSpawns(Type type) {
@@ -410,84 +424,6 @@ internal class ReflectionUtility {
     return member.MemberType == MemberTypes.Field
       ? (member as FieldInfo).FieldType
       : (member as PropertyInfo).PropertyType;
-  }
-
-  public ReflectionUtility(Assembly assembly) {
-    byte componentTypeId = 0;
-    var componentTypes = new List<ComponentType>();
-    List<Type> types = new List<Type>(assembly.GetTypes());
-    types.Sort((x, y) => x.Name.CompareTo(y.Name));
-    foreach (Type type in types) {
-      if (type.GetCustomAttribute<SyncAttribute>() != null) {
-        componentTypeId++;
-        typeIds.Add(type, componentTypeId);
-        idTypes.Add(componentTypeId, type);
-        componentTypes.Add(type);
-
-        int numberOfMembers = 0;
-        List<NetworkField> networkMemberInfos = new List<NetworkField>();
-        MemberInfo[] memberInfos = type.GetMembers().OrderBy((x) => x.Name).Where(memberInfo => memberInfo.IsDefined(typeof(SyncFieldAttribute), false)).ToArray();
-        for (int i = 0; i < memberInfos.Length; i++) {
-          MemberInfo memberInfo = memberInfos[i];
-
-          Type networkMemberInfoType = typeof(NetworkField<,>);
-          Type mainMemberInfoTypeType = memberInfo.MemberType == MemberTypes.Field ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
-          Type mainMemberInfoGenericType = networkMemberInfoType.MakeGenericType(type, mainMemberInfoTypeType);
-          SyncFieldAttribute netSyncMemberAttribute = memberInfo.GetCustomAttribute<SyncFieldAttribute>(false);
-          NetworkField mainMemberInfo = (NetworkField)Activator.CreateInstance(mainMemberInfoGenericType, memberInfo, netSyncMemberAttribute);
-          NetSyncSubMemberAttribute[] netSyncSubMemberAttributes = memberInfo.GetCustomAttributes<NetSyncSubMemberAttribute>(false).ToArray();
-
-          numberOfMembers += netSyncSubMemberAttributes.Length;
-          foreach (NetSyncSubMemberAttribute NetSyncSubMemberAttribute in netSyncSubMemberAttributes) {
-            if (!NetSyncSubMemberAttribute.OverriddenValues) {
-              NetSyncSubMemberAttribute.SetValuesFrom(netSyncMemberAttribute);
-            }
-
-            Type subType = memberInfo.MemberType == MemberTypes.Field ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
-
-            bool found = false;
-            IEnumerable<MemberInfo> subMemberInfos = subType.GetMembers().OrderBy(x => x.Name);
-            foreach (MemberInfo subMemberInfo in subMemberInfos) {
-              if (subMemberInfo.Name.Equals(NetSyncSubMemberAttribute.MemberName)) {
-                Type networkSubMemberInfoType = typeof(NetworkField<,,>);
-                Type mainSubMemberInfoTypeType = subMemberInfo.MemberType == MemberTypes.Field ? (subMemberInfo as FieldInfo).FieldType : (subMemberInfo as PropertyInfo).PropertyType;
-                Type subMemberInfoGenericType = networkSubMemberInfoType.MakeGenericType(type, subType, mainSubMemberInfoTypeType);
-                networkMemberInfos.Add((NetworkField)Activator.CreateInstance(subMemberInfoGenericType, subMemberInfo, mainMemberInfo, NetSyncSubMemberAttribute));
-                found = true;
-                break;
-              }
-            }
-
-            if (!found) {
-              throw new MissingMemberException(NetSyncSubMemberAttribute.MemberName);
-            }
-          }
-
-          if (netSyncSubMemberAttributes.Length == 0) {
-            numberOfMembers++;
-            networkMemberInfos.Add(mainMemberInfo);
-          }
-        }
-        cashedFields.Add(type, networkMemberInfos.ToArray());
-        FieldCounts.Add(type, numberOfMembers);
-      }
-
-      if (type.GetCustomAttribute<SpawnFactoryAttribute>() != null) {
-        MethodInfo[] methodInfos = type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(SpawnAttribute), false)).ToArray();
-        foreach (MethodInfo methodInfo in methodInfos) {
-          SpawnDelegate networkInstantiationHandlerDelegate = null;
-          try {
-            networkInstantiationHandlerDelegate = (SpawnDelegate)Delegate.CreateDelegate(typeof(SpawnDelegate), methodInfo);
-          } catch (Exception ex) {
-            throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", methodInfo.Name));
-          }
-          RegisterSpawn(methodInfo.GetCustomAttribute<SpawnAttribute>().InstanceId, networkInstantiationHandlerDelegate);
-        }
-      }
-    }
-
-    ComponentTypes = componentTypes.ToArray();
-    //NetworkFactoryMethods = networkFactoryMethods.ToArray();
   }
 
   public void RegisterSpawn(int id, SpawnDelegate networkInstantiationHandler) {
