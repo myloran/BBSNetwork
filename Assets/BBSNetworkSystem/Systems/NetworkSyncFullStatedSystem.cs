@@ -22,7 +22,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
   //private readonly List<NetworkMethodInfo<NetworkSyncFullStatedSystem>> ComponentDataMethods = new List<NetworkMethodInfo<NetworkSyncFullStatedSystem>>();
   static bool isLogging;
   readonly NetworkSendMessageUtility networkSendMessageUtility = new NetworkSendMessageUtility();
-  readonly List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, ComponentDataContainer>> GetComponentDataMethods = new List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, ComponentDataContainer>>();
+  readonly List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, Components>> GetComponentDataMethods = new List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, Components>>();
   NetworkMessageSerializer<NetworkSyncDataContainer> messageSerializer;
   int lastSend = Environment.TickCount & Int32.MaxValue;
   INetworkManager networkManager;
@@ -36,7 +36,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
     Type networkSystemType = typeof(NetworkSyncFullStatedSystem);
 
     for (int i = 0; i < componentTypes.Length; i++) {
-      var method = new NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, ComponentDataContainer>(networkSystemType
+      var method = new NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, Components>(networkSystemType
         .GetMethod("GetComponentData", BindingFlags.Instance | BindingFlags.NonPublic)
         .MakeGenericMethod(componentTypes[i].GetManagedType()));
 
@@ -81,14 +81,14 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
       NetworkEntityData networkEntityData = new NetworkEntityData {
         InstanceId = networkSyncs[i].instanceId,
 
-        NetworkSyncEntity = new NetworkEntity {
+        NetworkSyncEntity = new EntityId {
           ActorId = networkSyncStates[i].actorId,
           NetworkId = networkSyncStates[i].networkId,
         }
       };
 
       for (int j = 0; j < GetComponentDataMethods.Count; j++) {
-        if (GetComponentDataMethods[j].Invoke(this, ref entity, out ComponentDataContainer componentData)) {
+        if (GetComponentDataMethods[j].Invoke(this, ref entity, out Components componentData)) {
           networkEntityData.ComponentData.Add(componentData);
         }
       }
@@ -97,7 +97,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
     }
   }
 
-  bool GetComponentData<T>(ref Entity entity, out ComponentDataContainer componentDataContainer) where T : struct, IComponentData {
+  bool GetComponentData<T>(ref Entity entity, out Components componentDataContainer) where T : struct, IComponentData {
     componentDataContainer = null;
     if (EntityManager.HasComponent<T>(entity)) {
       ComponentType componentType = ComponentType.Create<T>();
@@ -114,7 +114,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
       }
 
 
-      componentDataContainer = new ComponentDataContainer() {
+      componentDataContainer = new Components() {
         ComponentTypeId = reflectionUtility.GetComponentTypeID(componentType),
         MemberData = memberDataContainers
       };

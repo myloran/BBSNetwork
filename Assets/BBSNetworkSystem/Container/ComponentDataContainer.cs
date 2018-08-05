@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [ProtoContract]
-public class ComponentDataContainer {
+public class Components {
     [ProtoMember(1, IsPacked = true, DataFormat = DataFormat.ZigZag)]
     public int ComponentTypeId;
 

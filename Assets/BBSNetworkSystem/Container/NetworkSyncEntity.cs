@@ -1,7 +1,7 @@
 ﻿using ProtoBuf;
 
 [ProtoContract]
-public struct NetworkEntity {
+public struct EntityId {
     [ProtoMember(1, IsPacked = true, DataFormat = DataFormat.ZigZag)]
     public int NetworkId;
 

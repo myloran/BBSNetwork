@@ -13,17 +13,17 @@ static class NetworkMessageUtility {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("NetworkSyncDataEntityContainers: {");
-        foreach (NetworkEntityContainer networkSyncDataEntityContainer in networkDataContainer.Entities) {
+        foreach (NetworkEntity networkSyncDataEntityContainer in networkDataContainer.Entities) {
             stringBuilder.AppendLine(string.Format("{0}NetworkSyncEntity: ", new String(' ', tab1))+"{");
-            stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab2), networkSyncDataEntityContainer.Entity.NetworkId));
-            stringBuilder.AppendLine(string.Format("{0}ActorId: {1}", new String(' ', tab2), networkSyncDataEntityContainer.Entity.ActorId));
+            stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab2), networkSyncDataEntityContainer.Id.NetworkId));
+            stringBuilder.AppendLine(string.Format("{0}ActorId: {1}", new String(' ', tab2), networkSyncDataEntityContainer.Id.ActorId));
             stringBuilder.AppendLine(string.Format("{0}", new String(' ', tab1)) + "}");
 
             stringBuilder.Append(string.Format("{0}AddedComponents: [ ", new String(' ', tab1)));
             if (networkSyncDataEntityContainer.AddedComponents.Any()) {
                 stringBuilder.AppendLine();
             }
-            foreach (ComponentDataContainer componentDataContainer in networkSyncDataEntityContainer.AddedComponents) {
+            foreach (Components componentDataContainer in networkSyncDataEntityContainer.AddedComponents) {
                 stringBuilder.AppendLine(string.Format("{0}componentDataContainer: ", new String(' ', tab2)) + "{");
                 stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.ComponentTypeId));
                 stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.MemberData.Select(x => x.Data))));
@@ -37,16 +37,16 @@ static class NetworkMessageUtility {
             stringBuilder.AppendLine(string.Format("{0}RemovedComponents: [ {1} ]", new String(' ', tab1), string.Join(", ", networkSyncDataEntityContainer.RemovedComponents)));
 
             stringBuilder.Append(string.Format("{0}ComponentData: [ ", new String(' ', tab1)));
-            if (networkSyncDataEntityContainer.ComponentData.Any()) {
+            if (networkSyncDataEntityContainer.Components.Any()) {
                 stringBuilder.AppendLine();
             }
-            foreach (ComponentDataContainer componentDataContainer in networkSyncDataEntityContainer.ComponentData) {
+            foreach (Components componentDataContainer in networkSyncDataEntityContainer.Components) {
                 stringBuilder.AppendLine(string.Format("{0}ComponentDataContainer: ", new String(' ', tab2)) + "{");
                 stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.ComponentTypeId));
                 stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.MemberData.Select(x=>x.Data))));
                 stringBuilder.AppendLine(string.Format("{0}", new String(' ', tab2))+"}");
             }
-            if (networkSyncDataEntityContainer.ComponentData.Any()) {
+            if (networkSyncDataEntityContainer.Components.Any()) {
                 stringBuilder.Append(new String(' ', tab1));
             }
             stringBuilder.AppendLine("]");
@@ -65,7 +65,7 @@ static class NetworkMessageUtility {
             if (networkEntityData.ComponentData.Any()) {
                 stringBuilder.AppendLine();
             }
-            foreach (ComponentDataContainer componentDataContainer in networkEntityData.ComponentData) {
+            foreach (Components componentDataContainer in networkEntityData.ComponentData) {
                 stringBuilder.AppendLine(string.Format("{0}ComponentDataContainer: ", new String(' ', tab2)) + "{");
                 stringBuilder.AppendLine(string.Format("{0}ComponentTypeId: {1}", new String(' ', tab3), componentDataContainer.ComponentTypeId));
                 stringBuilder.AppendLine(string.Format("{0}MemberData: [ {1} ]", new String(' ', tab3), string.Join(", ", componentDataContainer.MemberData.Select(x => x.Data))));
@@ -80,7 +80,7 @@ static class NetworkMessageUtility {
         stringBuilder.AppendLine("}");
         stringBuilder.AppendLine();
         stringBuilder.AppendLine("AddedNetworkSyncEntities: {");
-        foreach (NetworkEntity networkSyncEntity in networkDataContainer.RemovedEntities) {
+        foreach (EntityId networkSyncEntity in networkDataContainer.RemovedEntities) {
             stringBuilder.AppendLine(string.Format("{0}NetworkSyncEntity: ", new String(' ', tab1)) + "{");
             stringBuilder.AppendLine(string.Format("{0}NetworkId: {1}", new String(' ', tab2), networkSyncEntity.NetworkId));
             stringBuilder.AppendLine(string.Format("{0}ActorId: {1}", new String(' ', tab2), networkSyncEntity.ActorId));

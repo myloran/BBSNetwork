@@ -3,17 +3,17 @@ using Unity.Entities;
 
 public class NetworkSendMessageUtility {
   public readonly NetworkSyncDataContainer Container = new NetworkSyncDataContainer();
-  readonly Dictionary<Entity, NetworkEntityContainer> EntityContainers = new Dictionary<Entity, NetworkEntityContainer>();
+  readonly Dictionary<Entity, NetworkEntity> EntityContainers = new Dictionary<Entity, NetworkEntity>();
 
   public void AddEntity(NetworkEntityData networkEntityData) {
     Container.AddedEntities.Add(networkEntityData);
   }
 
-  public void RemoveEntity(NetworkEntity networkSyncEntity) {
+  public void RemoveEntity(EntityId networkSyncEntity) {
     Container.RemovedEntities.Add(networkSyncEntity);
   }
 
-  public void AddComponent(Entity entity, int actorId, int networkId, ComponentDataContainer componentData) {
+  public void AddComponent(Entity entity, int actorId, int networkId, Components componentData) {
     GetEntity(entity, actorId, networkId)
       .AddedComponents.Add(componentData);
   }
@@ -23,12 +23,12 @@ public class NetworkSendMessageUtility {
       .RemovedComponents.Add(componentId);
   }
 
-  public void SetComponentData(Entity entity, int actorId, int networkId, ComponentDataContainer componentDataContainer) {
+  public void SetComponentData(Entity entity, int actorId, int networkId, Components componentDataContainer) {
     GetEntity(entity, actorId, networkId)
-      .ComponentData.Add(componentDataContainer);
+      .Components.Add(componentDataContainer);
   }
 
-  public void AddComponents(Entity entity, int actorId, int networkId, List<ComponentDataContainer> componentIds) {
+  public void AddComponents(Entity entity, int actorId, int networkId, List<Components> componentIds) {
     GetEntity(entity, actorId, networkId)
       .AddedComponents.AddRange(componentIds);
   }
@@ -38,15 +38,15 @@ public class NetworkSendMessageUtility {
       .RemovedComponents.AddRange(componentIds);
   }
 
-  public void SetComponentData(Entity entity, int actorId, int networkId, List<ComponentDataContainer> componentDataContainers) {
+  public void SetComponentData(Entity entity, int actorId, int networkId, List<Components> componentDataContainers) {
     GetEntity(entity, actorId, networkId)
-      .ComponentData.AddRange(componentDataContainers);
+      .Components.AddRange(componentDataContainers);
   }
 
-  NetworkEntityContainer GetEntity(Entity entity, int actorId, int networkId) {
-    if (!EntityContainers.TryGetValue(entity, out NetworkEntityContainer container)) {
-      container = new NetworkEntityContainer() {
-        Entity = new NetworkEntity() {
+  NetworkEntity GetEntity(Entity entity, int actorId, int networkId) {
+    if (!EntityContainers.TryGetValue(entity, out NetworkEntity container)) {
+      container = new NetworkEntity() {
+        Id = new EntityId() {
           ActorId = actorId,
           NetworkId = networkId,
         }

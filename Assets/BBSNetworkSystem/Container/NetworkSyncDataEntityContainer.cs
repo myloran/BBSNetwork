@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 
 [ProtoContract]
-public class NetworkEntityContainer {
+public class NetworkEntity {
   [ProtoMember(1, DataFormat = DataFormat.ZigZag)]
-  public NetworkEntity Entity;
+  public EntityId Id;
 
   [ProtoMember(2, DataFormat = DataFormat.ZigZag)]
-  public List<ComponentDataContainer> AddedComponents = new List<ComponentDataContainer>(10);
+  public List<Components> AddedComponents = new List<Components>(10);
 
   [ProtoMember(3, DataFormat = DataFormat.ZigZag)]
   public List<int> RemovedComponents = new List<int>(10);
 
   [ProtoMember(4, DataFormat = DataFormat.ZigZag)]
-  public List<ComponentDataContainer> ComponentData = new List<ComponentDataContainer>(100);
+  public List<Components> Components = new List<Components>(100);
 }

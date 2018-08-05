@@ -192,7 +192,7 @@ public class NetworkReceiveSystem : ComponentSystem {
     // update components
     var updateEntities = container.Entities;
     for (int i = 0; i < updateEntities.Count; i++) {
-      var updateEntity = updateEntities[i].Entity;
+      var updateEntity = updateEntities[i].Id;
       if (updateEntity.ActorId == networkManager.LocalPlayerID) continue;
 
       int hash = GetHash(updateEntity.ActorId, updateEntity.NetworkId);
@@ -201,7 +201,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       var entity = entities[index];
       var addedComponents = updateEntities[i].AddedComponents;
       var removedComponents = updateEntities[i].RemovedComponents;
-      var componentData = updateEntities[i].ComponentData;
+      var componentData = updateEntities[i].Components;
       for (int j = 0; j < addedComponents.Count; j++) {
         var componentType = reflectionUtility.GetComponentType(addedComponents[j].ComponentTypeId);
         AddComponentsMethods[componentType].Invoke(this, entity, addedComponents[j].MemberData);
