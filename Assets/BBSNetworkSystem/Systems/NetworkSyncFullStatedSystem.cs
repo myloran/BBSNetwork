@@ -10,17 +10,17 @@ using UnityEngine;
 public class NetworkSyncFullStatedSystem : ComponentSystem {
 
   struct AddedEntityData {
-    public ComponentDataArray<NetworkSync> networkSyncComponents;
-    public ComponentDataArray<NetworkSyncState> networkSyncStateComponents;
+    public ComponentDataArray<NetworkSync> syncs;
+    public ComponentDataArray<NetworkSyncState> states;
     public EntityArray entities;
     public readonly int Length;
   }
-  [Inject] AddedEntityData addedSyncEntities;
+  [Inject] AddedEntityData added;
 
   //private readonly NetworkSyncDataContainer ownNetworkSyncDataContainer = new NetworkSyncDataContainer();
   //private readonly Dictionary<Entity, NetworkSyncDataEntityContainer> ownEntityContainerMap = new Dictionary<Entity, NetworkSyncDataEntityContainer>();
   //private readonly List<NetworkMethodInfo<NetworkSyncFullStatedSystem>> ComponentDataMethods = new List<NetworkMethodInfo<NetworkSyncFullStatedSystem>>();
-  static bool LogSendMessages;
+  static bool isLogging;
   readonly NetworkSendMessageUtility networkSendMessageUtility = new NetworkSendMessageUtility();
   readonly List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, ComponentDataContainer>> GetComponentDataMethods = new List<NetworkInOutMethodInfo<NetworkSyncFullStatedSystem, Entity, ComponentDataContainer>>();
   NetworkMessageSerializer<NetworkSyncDataContainer> messageSerializer;
@@ -71,9 +71,9 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
   }
 
   void Entities() {
-    EntityArray entities = addedSyncEntities.entities;
-    ComponentDataArray<NetworkSync> networkSyncs = addedSyncEntities.networkSyncComponents;
-    ComponentDataArray<NetworkSyncState> networkSyncStates = addedSyncEntities.networkSyncStateComponents;
+    EntityArray entities = added.entities;
+    ComponentDataArray<NetworkSync> networkSyncs = added.syncs;
+    ComponentDataArray<NetworkSyncState> networkSyncStates = added.states;
     for (int i = 0; i < entities.Length; i++) {
       int instanceId = networkSyncs[i].instanceId;
 
@@ -81,7 +81,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
       NetworkEntityData networkEntityData = new NetworkEntityData {
         InstanceId = networkSyncs[i].instanceId,
 
-        NetworkSyncEntity = new NetworkSyncEntity {
+        NetworkSyncEntity = new NetworkEntity {
           ActorId = networkSyncStates[i].actorId,
           NetworkId = networkSyncStates[i].networkId,
         }
@@ -128,10 +128,10 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
       TargetActors = jonedPlayer.ToArray(),
       Receiver = NetworkReceiverGroup.Target,
     };
-    if (LogSendMessages) {
-      Debug.Log("SendFullState:\n" + NetworkMessageUtility.ToString(networkSendMessageUtility.DataContainer));
+    if (isLogging) {
+      Debug.Log("SendFullState:\n" + NetworkMessageUtility.ToString(networkSendMessageUtility.Container));
     }
-    networkManager.SendMessage(NetworkEvents.DataSync, messageSerializer.Serialize(networkSendMessageUtility.DataContainer), true, networkEventOptions);
+    networkManager.SendMessage(NetworkEvents.DataSync, messageSerializer.Serialize(networkSendMessageUtility.Container), true, networkEventOptions);
     networkSendMessageUtility.Reset();
   }
 

@@ -127,9 +127,9 @@ public class NetworkReceiveSystem : ComponentSystem {
 
   void ReceiveNetworkUpdate(byte[] data) {
     var container = messageSerializer.Deserialize(data);
-    if (LogReceivedMessages && (container.AddedNetworkSyncEntities.Any()
-        || container.RemovedNetworkSyncEntities.Any()
-        || container.NetworkSyncDataEntities.Any())) {
+    if (LogReceivedMessages && (container.AddedEntities.Any()
+        || container.RemovedEntities.Any()
+        || container.Entities.Any())) {
       Debug.Log("ReceiveNetworkUpdate: " + NetworkMessageUtility.ToString(container));
     }
     var group = GetComponentGroup(ComponentType.Create<NetworkSyncState>());
@@ -142,7 +142,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       map.TryAdd(hash, i);
     }
 
-    var addedEntities = container.AddedNetworkSyncEntities;
+    var addedEntities = container.AddedEntities;
     for (int i = 0; i < addedEntities.Count; i++) {
       if (addedEntities[i].NetworkSyncEntity.ActorId == networkManager.LocalPlayerID) continue;
 
@@ -168,7 +168,7 @@ public class NetworkReceiveSystem : ComponentSystem {
     }
 
     // removed Entities
-    var removedEntities = container.RemovedNetworkSyncEntities;
+    var removedEntities = container.RemovedEntities;
     for (int i = 0; i < removedEntities.Count; i++) {
       if (removedEntities[i].ActorId == networkManager.LocalPlayerID) continue;
 
@@ -190,9 +190,9 @@ public class NetworkReceiveSystem : ComponentSystem {
     }
 
     // update components
-    var updateEntities = container.NetworkSyncDataEntities;
+    var updateEntities = container.Entities;
     for (int i = 0; i < updateEntities.Count; i++) {
-      var updateEntity = updateEntities[i].NetworkSyncEntity;
+      var updateEntity = updateEntities[i].Entity;
       if (updateEntity.ActorId == networkManager.LocalPlayerID) continue;
 
       int hash = GetHash(updateEntity.ActorId, updateEntity.NetworkId);

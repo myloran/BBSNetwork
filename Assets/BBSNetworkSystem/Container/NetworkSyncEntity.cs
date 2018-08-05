@@ -1,7 +1,7 @@
 ﻿using ProtoBuf;
 
 [ProtoContract]
-public struct NetworkSyncEntity {
+public struct NetworkEntity {
     [ProtoMember(1, IsPacked = true, DataFormat = DataFormat.ZigZag)]
     public int NetworkId;
 

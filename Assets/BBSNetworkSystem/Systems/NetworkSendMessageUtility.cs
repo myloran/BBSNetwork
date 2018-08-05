@@ -2,15 +2,15 @@
 using Unity.Entities;
 
 public class NetworkSendMessageUtility {
-  public readonly NetworkSyncDataContainer DataContainer = new NetworkSyncDataContainer();
-  readonly Dictionary<Entity, NetworkSyncDataEntityContainer> EntityContainerMap = new Dictionary<Entity, NetworkSyncDataEntityContainer>();
+  public readonly NetworkSyncDataContainer Container = new NetworkSyncDataContainer();
+  readonly Dictionary<Entity, NetworkEntityContainer> EntityContainers = new Dictionary<Entity, NetworkEntityContainer>();
 
   public void AddEntity(NetworkEntityData networkEntityData) {
-    DataContainer.AddedNetworkSyncEntities.Add(networkEntityData);
+    Container.AddedEntities.Add(networkEntityData);
   }
 
-  public void RemoveEntity(NetworkSyncEntity networkSyncEntity) {
-    DataContainer.RemovedNetworkSyncEntities.Add(networkSyncEntity);
+  public void RemoveEntity(NetworkEntity networkSyncEntity) {
+    Container.RemovedEntities.Add(networkSyncEntity);
   }
 
   public void AddComponent(Entity entity, int actorId, int networkId, ComponentDataContainer componentData) {
@@ -43,24 +43,24 @@ public class NetworkSendMessageUtility {
       .ComponentData.AddRange(componentDataContainers);
   }
 
-  NetworkSyncDataEntityContainer GetEntity(Entity entity, int actorId, int networkId) {
-    if (!EntityContainerMap.TryGetValue(entity, out NetworkSyncDataEntityContainer dataContainer)) {
-      dataContainer = new NetworkSyncDataEntityContainer() {
-        NetworkSyncEntity = new NetworkSyncEntity() {
+  NetworkEntityContainer GetEntity(Entity entity, int actorId, int networkId) {
+    if (!EntityContainers.TryGetValue(entity, out NetworkEntityContainer container)) {
+      container = new NetworkEntityContainer() {
+        Entity = new NetworkEntity() {
           ActorId = actorId,
           NetworkId = networkId,
         }
       };
-      DataContainer.NetworkSyncDataEntities.Add(dataContainer);
-      EntityContainerMap.Add(entity, dataContainer);
+      Container.Entities.Add(container);
+      EntityContainers.Add(entity, container);
     }
-    return dataContainer;
+    return container;
   }
 
   public void Reset() {
-    DataContainer.AddedNetworkSyncEntities.Clear();
-    DataContainer.RemovedNetworkSyncEntities.Clear();
-    DataContainer.NetworkSyncDataEntities.Clear();
-    EntityContainerMap.Clear();
+    Container.AddedEntities.Clear();
+    Container.RemovedEntities.Clear();
+    Container.Entities.Clear();
+    EntityContainers.Clear();
   }
 }

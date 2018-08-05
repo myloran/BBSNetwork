@@ -142,7 +142,7 @@ public class NetworkSendSystem : ComponentSystem {
             NetworkEntityData networkEntityData = new NetworkEntityData {
                 InstanceId = networkSyncs[i].instanceId,
 
-                NetworkSyncEntity = new NetworkSyncEntity {
+                NetworkSyncEntity = new NetworkEntity {
                     ActorId = component.actorId,
                     NetworkId = component.networkId,
                 }
@@ -173,7 +173,7 @@ public class NetworkSendSystem : ComponentSystem {
                 RemoveComponentOnDestroyEntityMethods[j].Invoke(this, entities[i]);
             }
 
-            NetworkSyncEntity networkSyncEntity = new NetworkSyncEntity {
+            NetworkEntity networkSyncEntity = new NetworkEntity {
                 ActorId = component.actorId,
                 NetworkId = component.networkId,
             };
@@ -311,29 +311,29 @@ public class NetworkSendSystem : ComponentSystem {
         NetworkEventOptions networkEventOptions = new NetworkEventOptions();
         byte[] data;
         if (networkManager.IsMaster) {
-            if (!AllNetworkSendMessageUtility.DataContainer.AddedNetworkSyncEntities.Any()
-                && !AllNetworkSendMessageUtility.DataContainer.RemovedNetworkSyncEntities.Any()
-                && !AllNetworkSendMessageUtility.DataContainer.NetworkSyncDataEntities.Any()) {
+            if (!AllNetworkSendMessageUtility.Container.AddedEntities.Any()
+                && !AllNetworkSendMessageUtility.Container.RemovedEntities.Any()
+                && !AllNetworkSendMessageUtility.Container.Entities.Any()) {
                 return;
             }
 
             networkEventOptions.Receiver = NetworkReceiverGroup.Others;
             if (LogSendMessages) {
-                LastSendMessage = NetworkMessageUtility.ToString(AllNetworkSendMessageUtility.DataContainer);
+                LastSendMessage = NetworkMessageUtility.ToString(AllNetworkSendMessageUtility.Container);
             }
-            data = messageSerializer.Serialize(AllNetworkSendMessageUtility.DataContainer);
+            data = messageSerializer.Serialize(AllNetworkSendMessageUtility.Container);
         } else {
-            if (!ownNetworkSendMessageUtility.DataContainer.AddedNetworkSyncEntities.Any()
-                && !ownNetworkSendMessageUtility.DataContainer.RemovedNetworkSyncEntities.Any()
-                && !ownNetworkSendMessageUtility.DataContainer.NetworkSyncDataEntities.Any()) {
+            if (!ownNetworkSendMessageUtility.Container.AddedEntities.Any()
+                && !ownNetworkSendMessageUtility.Container.RemovedEntities.Any()
+                && !ownNetworkSendMessageUtility.Container.Entities.Any()) {
                 return;
             }
 
             networkEventOptions.Receiver = NetworkReceiverGroup.MasterClient;
             if (LogSendMessages) {
-                LastSendMessage = NetworkMessageUtility.ToString(ownNetworkSendMessageUtility.DataContainer);
+                LastSendMessage = NetworkMessageUtility.ToString(ownNetworkSendMessageUtility.Container);
             }
-            data = messageSerializer.Serialize(ownNetworkSendMessageUtility.DataContainer);
+            data = messageSerializer.Serialize(ownNetworkSendMessageUtility.Container);
 
         }
         //Debug.Log("NetworkSendSystem:\n" + LastSendMessage);
