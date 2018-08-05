@@ -306,17 +306,21 @@ internal class ReflectionUtility {
           componentTypes.Add(type);
         }
 
-        if (type.GetCustomAttribute<NetworkEntityFactoryAttribute>() != null) {
+        if (type.GetCustomAttribute<SpawnFactoryAttribute>() != null) {
           //networkFactoryMethods.AddRange(type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(NetworkInstantiatorAttribute), false)));
-          MethodInfo[] methodInfos = type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(NetworkEntityFactoryMethodAttribute), false)).ToArray();
-          foreach (MethodInfo methodInfo in methodInfos) {
+          var methods = type
+            .GetMethods()
+            .Where(_ => _.IsDefined(typeof(SpawnAttribute), false))
+            .ToArray();
+
+          foreach (var method in methods) {
             NetworkInstantiationHandlerDelegate networkInstantiationHandlerDelegate = null;
             try {
-              networkInstantiationHandlerDelegate = (NetworkInstantiationHandlerDelegate)Delegate.CreateDelegate(typeof(NetworkInstantiationHandlerDelegate), methodInfo);
+              networkInstantiationHandlerDelegate = (NetworkInstantiationHandlerDelegate)Delegate.CreateDelegate(typeof(NetworkInstantiationHandlerDelegate), method);
             } catch (Exception ex) {
-              throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", methodInfo.Name));
+              throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", method.Name));
             }
-            RegisterEntityFactoryMethod(methodInfo.GetCustomAttribute<NetworkEntityFactoryMethodAttribute>().InstanceId, networkInstantiationHandlerDelegate);
+            RegisterEntityFactoryMethod(method.GetCustomAttribute<SpawnAttribute>().InstanceId, networkInstantiationHandlerDelegate);
           }
         }
       }
@@ -460,8 +464,8 @@ internal class ReflectionUtility {
         FieldCounts.Add(type, numberOfMembers);
       }
 
-      if (type.GetCustomAttribute<NetworkEntityFactoryAttribute>() != null) {
-        MethodInfo[] methodInfos = type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(NetworkEntityFactoryMethodAttribute), false)).ToArray();
+      if (type.GetCustomAttribute<SpawnFactoryAttribute>() != null) {
+        MethodInfo[] methodInfos = type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(SpawnAttribute), false)).ToArray();
         foreach (MethodInfo methodInfo in methodInfos) {
           NetworkInstantiationHandlerDelegate networkInstantiationHandlerDelegate = null;
           try {
@@ -469,7 +473,7 @@ internal class ReflectionUtility {
           } catch (Exception ex) {
             throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", methodInfo.Name));
           }
-          RegisterEntityFactoryMethod(methodInfo.GetCustomAttribute<NetworkEntityFactoryMethodAttribute>().InstanceId, networkInstantiationHandlerDelegate);
+          RegisterEntityFactoryMethod(methodInfo.GetCustomAttribute<SpawnAttribute>().InstanceId, networkInstantiationHandlerDelegate);
         }
       }
     }

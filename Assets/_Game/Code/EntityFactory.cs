@@ -1,9 +1,9 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 
-[NetworkEntityFactory]
+[SpawnFactory]
 public static class EntityFactory {
-  [NetworkEntityFactoryMethod(1)]
+  [Spawn(1)]
   public static Entity CreateNetPlayer(EntityManager entityManager) {
     //return entityManager.Instantiate(GameSettings.Instance.NetworkPlayerPrefab);
     return GameObject
