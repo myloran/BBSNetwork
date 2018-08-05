@@ -238,7 +238,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       T component = new T();
       for (int i = 0; i < memberDataContainers.Count; i++) {
         int value = memberDataContainers[i].Value;
-        (infos[i] as NetworkMemberInfo<T>)
+        (infos[i] as NetworkField<T>)
           .SetValue(ref component, value, value, Time.deltaTime, NetworkSendSystem.SendInterval);
       }
       PostUpdateCommands.AddComponent(entity, component);
@@ -299,7 +299,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       //Debug.Log(componentStates[i].dataEntity);
       NativeArray<int> values = EntityManager.GetFixedArray<int>(states[i].dataEntity);
       for (int j = 0; j < values.Length; j += 2) {
-        (infos[j / 2] as NetworkMemberInfo<T>)
+        (infos[j / 2] as NetworkField<T>)
           .SetValue(ref component, values[j], values[j + 1], Time.deltaTime, DeltaTimeMessage);
       }
       components[i] = component;

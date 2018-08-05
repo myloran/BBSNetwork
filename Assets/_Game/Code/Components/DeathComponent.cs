@@ -3,7 +3,7 @@
 //[Serializable]
 [NetSync]
 public struct DeathComponent : IComponentData {
-    [NetSyncMember(initOnly: true)]
+    [FieldSync(initOnly: true)]
     public float timer;
 }
 

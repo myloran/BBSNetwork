@@ -4,16 +4,16 @@ using UnityEngine;
 //[Serializable]
 [NetSync]
 public struct WeaponAction : IComponentData {
-    [NetSyncMember]
+    [FieldSync]
     public boolean fire;
-    [NetSyncMember]
+    [FieldSync]
     public boolean reload;
 
-    [NetSyncMember(lerpDamp: 0)]
+    [FieldSync(lerpDamp: 0)]
     [NetSyncSubMember("x"), NetSyncSubMember("y"), NetSyncSubMember("z")]
     public Vector3 shootOrigin;
 
-    [NetSyncMember(lerpDamp:0)]
+    [FieldSync(lerpDamp:0)]
     [NetSyncSubMember("x"), NetSyncSubMember("y"), NetSyncSubMember("z")]
     public Vector3 shootDir;
 

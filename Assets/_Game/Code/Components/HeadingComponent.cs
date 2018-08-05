@@ -3,7 +3,7 @@ using UnityEngine;
 
 [NetSync]
 public struct Heading : IComponentData {
-    [NetSyncMember(lerpDamp:0.9f)]
+    [FieldSync(lerpDamp:0.9f)]
     [NetSyncSubMember("x")]
     [NetSyncSubMember("z")]
     public Vector3 Value;

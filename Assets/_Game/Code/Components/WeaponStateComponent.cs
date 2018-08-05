@@ -10,7 +10,7 @@ public struct WeaponState : IComponentData {
     [HideInInspector] public float effectTimer;
     [HideInInspector] public boolean reloading;
 
-    [NetSyncMember]
+    [FieldSync]
     public int magazine;
 }
 

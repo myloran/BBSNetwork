@@ -9,12 +9,12 @@ public delegate Entity NetworkInstantiationHandlerDelegate(EntityManager entityM
 internal delegate void RefAction<S, T>(ref S instance, T value);
 internal delegate T RefFunc<S, T>(ref S instance);
 
-internal abstract class NetworkMemberInfo { }
+internal abstract class NetworkField { }
 
-internal abstract class NetworkMemberInfo<OBJ> : NetworkMemberInfo {
+internal abstract class NetworkField<OBJ> : NetworkField {
   public readonly NetSyncBaseAttribute syncAttribute;
 
-  public NetworkMemberInfo(NetSyncBaseAttribute syncAttribute) {
+  public NetworkField(NetSyncBaseAttribute syncAttribute) {
     this.syncAttribute = syncAttribute;
   }
 
@@ -28,14 +28,14 @@ internal abstract class NetworkMemberInfo<OBJ> : NetworkMemberInfo {
   public abstract int GetValue(OBJ obj);
 }
 
-internal sealed class NetworkMemberInfo<OBJ, TYPE> : NetworkMemberInfo<OBJ> {
+internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
   public readonly RefFunc<OBJ, TYPE> GetValueDelegate;
   public readonly RefAction<OBJ, TYPE> SetValueDelegate;
   //private readonly MemberInfo memberInfo;
-  readonly NetworkMemberInfo parent;
+  readonly NetworkField parent;
   NetworkMath networkMath;
 
-  public NetworkMemberInfo(
+  public NetworkField(
     MemberInfo info, 
     NetSyncBaseAttribute syncAttribute) : base(syncAttribute
   ) {
@@ -75,9 +75,9 @@ internal sealed class NetworkMemberInfo<OBJ, TYPE> : NetworkMemberInfo<OBJ> {
     }   
   }
 
-  public NetworkMemberInfo(
+  public NetworkField(
       MemberInfo info, 
-      NetworkMemberInfo parent, 
+      NetworkField parent, 
       NetSyncBaseAttribute syncAttribute) : base(syncAttribute
   ) {
     this.parent = parent;
@@ -105,19 +105,19 @@ internal sealed class NetworkMemberInfo<OBJ, TYPE> : NetworkMemberInfo<OBJ> {
   }
 }
 
-internal sealed class NetworkMemberInfo<Parent_OBJ, OBJ, TYPE> : NetworkMemberInfo<Parent_OBJ> {
+internal sealed class NetworkMemberInfo<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_OBJ> {
   public readonly RefFunc<OBJ, TYPE> GetValueDelegate;
   public readonly RefAction<OBJ, TYPE> SetValueDelegate;
   //private readonly MemberInfo memberInfo;
-  readonly NetworkMemberInfo<Parent_OBJ, OBJ> parent;
+  readonly NetworkField<Parent_OBJ, OBJ> parent;
   NetworkMath networkMath;
 
   public NetworkMemberInfo(
       MemberInfo info,
-      NetworkMemberInfo parent,
+      NetworkField parent,
       NetSyncBaseAttribute syncAttribute) : base(syncAttribute
   ) {
-    this.parent = (NetworkMemberInfo<Parent_OBJ, OBJ>)parent;
+    this.parent = (NetworkField<Parent_OBJ, OBJ>)parent;
     //Debug.Log(typeof(Parent_OBJ) + " --- " + typeof(OBJ) + " --- " + typeof(TYPE));
     if (info.MemberType == MemberTypes.Field) {
       var fieldInfo = (FieldInfo)info;
@@ -237,7 +237,6 @@ internal sealed class NetworkInOutMethodInfo<T, RefParam, OutParam> {
 
 
 internal static class NetworkMemberInfoUtility {
-
   public static RefFunc<S, T> CreateGetter<S, T>(FieldInfo field) {
     var instance = Expression.Parameter(
       typeof(S).MakeByRefType(), 
@@ -277,55 +276,60 @@ internal static class NetworkMemberInfoUtility {
 }
 
 internal class ReflectionUtility {
-
-  private Dictionary<ComponentType, NetworkMemberInfo[]> cashedNetworkMemberInfo = new Dictionary<ComponentType, NetworkMemberInfo[]>();
-
-  private readonly Dictionary<ComponentType, int> componentTypeToIdMap = new Dictionary<ComponentType, int>();
-  private readonly Dictionary<int, ComponentType> idToComponentTypeMap = new Dictionary<int, ComponentType>();
-  private readonly Dictionary<ComponentType, int> componentTypeMemberCount = new Dictionary<ComponentType, int>();
-
   public readonly ComponentType[] ComponentTypes;
+  Dictionary<ComponentType, NetworkField[]> cashedFields = new Dictionary<ComponentType, NetworkField[]>();
+  readonly Dictionary<ComponentType, int> typeIds = new Dictionary<ComponentType, int>();
+  readonly Dictionary<int, ComponentType> idTypes = new Dictionary<int, ComponentType>();
+  readonly Dictionary<ComponentType, int> FieldCounts = new Dictionary<ComponentType, int>();
   //public static readonly MethodInfo[] NetworkFactoryMethods;
-
-  private Dictionary<int, NetworkInstantiationHandlerDelegate> entityFactoryMethodMap = new Dictionary<int, NetworkInstantiationHandlerDelegate>();
+  Dictionary<int, NetworkInstantiationHandlerDelegate> entityFactoryMethodMap = new Dictionary<int, NetworkInstantiationHandlerDelegate>();
 
   public ReflectionUtility() {
-
-    byte componentTypeId = 0;
+    byte id = 0;
     var componentTypes = new List<ComponentType>();
     //var networkFactoryMethods = new List<MethodInfo>();
-    List<Assembly> assemblies = new List<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
+    var assemblies = new List<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
     assemblies.Sort((x, y) => x.FullName.CompareTo(y.FullName));
-    foreach (Assembly assembly in assemblies) {
-      List<Type> types = new List<Type>(assembly.GetTypes());
+
+    foreach (var assembly in assemblies) {
+      var types = new List<Type>(assembly.GetTypes());
       types.Sort((x, y) => x.Name.CompareTo(y.Name));
-      foreach (Type type in types) {
+
+      foreach (var type in types) {
         if (type.GetCustomAttribute<NetSyncAttribute>() != null) {
-          componentTypeId++;
-          componentTypeToIdMap.Add(type, componentTypeId);
-          idToComponentTypeMap.Add(componentTypeId, type);
+          id++;
+          typeIds.Add(type, id);
+          idTypes.Add(id, type);
           componentTypes.Add(type);
 
-          int numberOfMembers = 0;
-          List<NetworkMemberInfo> networkMemberInfos = new List<NetworkMemberInfo>();
-          MemberInfo[] memberInfos = type.GetMembers().OrderBy((x) => x.Name).Where(memberInfo => memberInfo.IsDefined(typeof(NetSyncMemberAttribute), false)).ToArray();
-          for (int i = 0; i < memberInfos.Length; i++) {
-            MemberInfo memberInfo = memberInfos[i];
+          int fieldsCount = 0;
+          var fields = new List<NetworkField>();
 
-            Type networkMemberInfoType = typeof(NetworkMemberInfo<,>);
-            Type mainMemberInfoTypeType = memberInfo.MemberType == MemberTypes.Field ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
-            Type mainMemberInfoGenericType = networkMemberInfoType.MakeGenericType(type, mainMemberInfoTypeType);
-            NetSyncMemberAttribute netSyncMemberAttribute = memberInfo.GetCustomAttribute<NetSyncMemberAttribute>(false);
-            NetworkMemberInfo mainMemberInfo = (NetworkMemberInfo)Activator.CreateInstance(mainMemberInfoGenericType, memberInfo, netSyncMemberAttribute);
-            NetSyncSubMemberAttribute[] netSyncSubMemberAttributes = memberInfo.GetCustomAttributes<NetSyncSubMemberAttribute>(false).ToArray();
+          var members = type
+            .GetMembers()
+            .OrderBy((_) => _.Name)
+            .Where(_ => _.IsDefined(typeof(FieldSyncAttribute), false))
+            .ToArray();
 
-            numberOfMembers += netSyncSubMemberAttributes.Length;
+          foreach (var member in members) {
+            var fieldType = typeof(NetworkField<,>);
+
+            var parentType = member.MemberType == MemberTypes.Field
+              ? (member as FieldInfo).FieldType
+              : (member as PropertyInfo).PropertyType;
+
+            var genericType = fieldType.MakeGenericType(type, parentType);
+            var syncAttribute = member.GetCustomAttribute<FieldSyncAttribute>(false);
+            var field = (NetworkField)Activator.CreateInstance(genericType, member, syncAttribute);
+            var netSyncSubMemberAttributes = member.GetCustomAttributes<NetSyncSubMemberAttribute>(false).ToArray();
+
+            fieldsCount += netSyncSubMemberAttributes.Length;
             foreach (NetSyncSubMemberAttribute NetSyncSubMemberAttribute in netSyncSubMemberAttributes) {
               if (!NetSyncSubMemberAttribute.OverriddenValues) {
-                NetSyncSubMemberAttribute.SetValuesFrom(netSyncMemberAttribute);
+                NetSyncSubMemberAttribute.SetValuesFrom(syncAttribute);
               }
 
-              Type subType = memberInfo.MemberType == MemberTypes.Field ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
+              Type subType = member.MemberType == MemberTypes.Field ? (member as FieldInfo).FieldType : (member as PropertyInfo).PropertyType;
 
               bool found = false;
               IEnumerable<MemberInfo> subMemberInfos = subType.GetMembers().OrderBy(x => x.Name);
@@ -334,7 +338,7 @@ internal class ReflectionUtility {
                   Type networkSubMemberInfoType = typeof(NetworkMemberInfo<,,>);
                   Type mainSubMemberInfoTypeType = subMemberInfo.MemberType == MemberTypes.Field ? (subMemberInfo as FieldInfo).FieldType : (subMemberInfo as PropertyInfo).PropertyType;
                   Type subMemberInfoGenericType = networkSubMemberInfoType.MakeGenericType(type, subType, mainSubMemberInfoTypeType);
-                  networkMemberInfos.Add((NetworkMemberInfo)Activator.CreateInstance(subMemberInfoGenericType, subMemberInfo, mainMemberInfo, NetSyncSubMemberAttribute));
+                  fields.Add((NetworkField)Activator.CreateInstance(subMemberInfoGenericType, subMemberInfo, field, NetSyncSubMemberAttribute));
                   found = true;
                   break;
                 }
@@ -346,12 +350,12 @@ internal class ReflectionUtility {
             }
 
             if (netSyncSubMemberAttributes.Length == 0) {
-              numberOfMembers++;
-              networkMemberInfos.Add(mainMemberInfo);
+              fieldsCount++;
+              fields.Add(field);
             }
           }
-          cashedNetworkMemberInfo.Add(type, networkMemberInfos.ToArray());
-          componentTypeMemberCount.Add(type, numberOfMembers);
+          cashedFields.Add(type, fields.ToArray());
+          FieldCounts.Add(type, fieldsCount);
         }
 
         if (type.GetCustomAttribute<NetworkEntityFactoryAttribute>() != null) {
@@ -384,21 +388,21 @@ internal class ReflectionUtility {
     foreach (Type type in types) {
       if (type.GetCustomAttribute<NetSyncAttribute>() != null) {
         componentTypeId++;
-        componentTypeToIdMap.Add(type, componentTypeId);
-        idToComponentTypeMap.Add(componentTypeId, type);
+        typeIds.Add(type, componentTypeId);
+        idTypes.Add(componentTypeId, type);
         componentTypes.Add(type);
 
         int numberOfMembers = 0;
-        List<NetworkMemberInfo> networkMemberInfos = new List<NetworkMemberInfo>();
-        MemberInfo[] memberInfos = type.GetMembers().OrderBy((x) => x.Name).Where(memberInfo => memberInfo.IsDefined(typeof(NetSyncMemberAttribute), false)).ToArray();
+        List<NetworkField> networkMemberInfos = new List<NetworkField>();
+        MemberInfo[] memberInfos = type.GetMembers().OrderBy((x) => x.Name).Where(memberInfo => memberInfo.IsDefined(typeof(FieldSyncAttribute), false)).ToArray();
         for (int i = 0; i < memberInfos.Length; i++) {
           MemberInfo memberInfo = memberInfos[i];
 
-          Type networkMemberInfoType = typeof(NetworkMemberInfo<,>);
+          Type networkMemberInfoType = typeof(NetworkField<,>);
           Type mainMemberInfoTypeType = memberInfo.MemberType == MemberTypes.Field ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
           Type mainMemberInfoGenericType = networkMemberInfoType.MakeGenericType(type, mainMemberInfoTypeType);
-          NetSyncMemberAttribute netSyncMemberAttribute = memberInfo.GetCustomAttribute<NetSyncMemberAttribute>(false);
-          NetworkMemberInfo mainMemberInfo = (NetworkMemberInfo)Activator.CreateInstance(mainMemberInfoGenericType, memberInfo, netSyncMemberAttribute);
+          FieldSyncAttribute netSyncMemberAttribute = memberInfo.GetCustomAttribute<FieldSyncAttribute>(false);
+          NetworkField mainMemberInfo = (NetworkField)Activator.CreateInstance(mainMemberInfoGenericType, memberInfo, netSyncMemberAttribute);
           NetSyncSubMemberAttribute[] netSyncSubMemberAttributes = memberInfo.GetCustomAttributes<NetSyncSubMemberAttribute>(false).ToArray();
 
           numberOfMembers += netSyncSubMemberAttributes.Length;
@@ -416,7 +420,7 @@ internal class ReflectionUtility {
                 Type networkSubMemberInfoType = typeof(NetworkMemberInfo<,,>);
                 Type mainSubMemberInfoTypeType = subMemberInfo.MemberType == MemberTypes.Field ? (subMemberInfo as FieldInfo).FieldType : (subMemberInfo as PropertyInfo).PropertyType;
                 Type subMemberInfoGenericType = networkSubMemberInfoType.MakeGenericType(type, subType, mainSubMemberInfoTypeType);
-                networkMemberInfos.Add((NetworkMemberInfo)Activator.CreateInstance(subMemberInfoGenericType, subMemberInfo, mainMemberInfo, NetSyncSubMemberAttribute));
+                networkMemberInfos.Add((NetworkField)Activator.CreateInstance(subMemberInfoGenericType, subMemberInfo, mainMemberInfo, NetSyncSubMemberAttribute));
                 found = true;
                 break;
               }
@@ -432,8 +436,8 @@ internal class ReflectionUtility {
             networkMemberInfos.Add(mainMemberInfo);
           }
         }
-        cashedNetworkMemberInfo.Add(type, networkMemberInfos.ToArray());
-        componentTypeMemberCount.Add(type, numberOfMembers);
+        cashedFields.Add(type, networkMemberInfos.ToArray());
+        FieldCounts.Add(type, numberOfMembers);
       }
 
       if (type.GetCustomAttribute<NetworkEntityFactoryAttribute>() != null) {
@@ -466,19 +470,19 @@ internal class ReflectionUtility {
     }
   }
 
-  public NetworkMemberInfo[] GetNetworkMemberInfo(ComponentType componentType) {
-    return cashedNetworkMemberInfo[componentType];
+  public NetworkField[] GetNetworkMemberInfo(ComponentType componentType) {
+    return cashedFields[componentType];
   }
 
   public int GetComponentTypeID(ComponentType componentType) {
-    return componentTypeToIdMap[componentType];
+    return typeIds[componentType];
   }
 
   public ComponentType GetComponentType(int id) {
-    return idToComponentTypeMap[id];
+    return idTypes[id];
   }
 
   public int GetNumberOfMembers(Type componentType) {
-    return componentTypeMemberCount[componentType];
+    return FieldCounts[componentType];
   }
 }

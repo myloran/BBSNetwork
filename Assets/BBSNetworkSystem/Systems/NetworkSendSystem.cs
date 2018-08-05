@@ -199,10 +199,10 @@ public class NetworkSendSystem : ComponentSystem {
             PostUpdateCommands.AddComponent(entity, new NetworkComponentState<T>());
 
             T component = EntityManager.GetComponentData<T>(entity);
-            NetworkMemberInfo[] networkMemberInfos = reflectionUtility.GetNetworkMemberInfo(componentType);
+            NetworkField[] networkMemberInfos = reflectionUtility.GetNetworkMemberInfo(componentType);
             List<ComponentField> memberDataContainers = new List<ComponentField>();
             for (int i = 0; i < numberOfMembers; i++) {
-                int value = (networkMemberInfos[i] as NetworkMemberInfo<T>).GetValue(component);
+                int value = (networkMemberInfos[i] as NetworkField<T>).GetValue(component);
                 memberDataContainers.Add(new ComponentField() {
                     Id = i,
                     Value = value
@@ -226,7 +226,7 @@ public class NetworkSendSystem : ComponentSystem {
         ComponentDataArray<SyncState> networkSyncStateComponents = group.GetComponentDataArray<SyncState>();
         EntityArray entities = group.GetEntityArray();
 
-        NetworkMemberInfo[] networkMemberInfos = reflectionUtility.GetNetworkMemberInfo(componentType);
+        NetworkField[] networkMemberInfos = reflectionUtility.GetNetworkMemberInfo(componentType);
 
         for (int i = 0; i < entities.Length; i++) {
             SyncState networkSyncState = networkSyncStateComponents[i];
@@ -238,7 +238,7 @@ public class NetworkSendSystem : ComponentSystem {
             for (int j = 0; j < networkMemberInfos.Length; j++) {
                 componentData.Fields.Add(new ComponentField {
                     Id = j,
-                    Value = (networkMemberInfos[j] as NetworkMemberInfo<T>).GetValue(component),
+                    Value = (networkMemberInfos[j] as NetworkField<T>).GetValue(component),
                 });
             }
 
@@ -277,14 +277,14 @@ public class NetworkSendSystem : ComponentSystem {
         ComponentDataArray<NetworkComponentState<T>> networkComponentStates = group.GetComponentDataArray<NetworkComponentState<T>>();
         EntityArray entities = group.GetEntityArray();
 
-        NetworkMemberInfo[] networkMemberInfos = reflectionUtility.GetNetworkMemberInfo(componentType);
+        NetworkField[] networkMemberInfos = reflectionUtility.GetNetworkMemberInfo(componentType);
         for (int i = 0; i < entities.Length; i++) {            
             NativeArray<int> values = EntityManager.GetFixedArray<int>(networkComponentStates[i].dataEntity);
             NetworkComponent componentDataContainer = new NetworkComponent {
                 TypeId = reflectionUtility.GetComponentTypeID(componentType),
             };
             for (int j = 0; j < networkMemberInfos.Length; j++) {
-                NetworkMemberInfo<T> networkMemberInfo = (networkMemberInfos[j] as NetworkMemberInfo<T>);
+                NetworkField<T> networkMemberInfo = (networkMemberInfos[j] as NetworkField<T>);
                 if (networkMemberInfo.syncAttribute.InitOnly) {
                     continue;
                 }
