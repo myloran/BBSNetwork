@@ -129,8 +129,8 @@ internal sealed class NetworkMemberInfo<Parent_OBJ, OBJ, TYPE> : NetworkMemberIn
 
 
 
-internal sealed class NetworkMethodInfo<T> {
-    public NetworkMethodInfo(MethodInfo methodInfo) {
+internal sealed class NetworkMethod<T> {
+    public NetworkMethod(MethodInfo methodInfo) {
         actionDelegate = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), methodInfo);
     }
     private readonly Action<T> actionDelegate;

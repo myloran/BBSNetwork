@@ -18,7 +18,7 @@ public class NetworkReceiveSystem : ComponentSystem {
   readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity>> RemoveComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity>>();
   readonly Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>> SetComponentsMethods = new Dictionary<ComponentType, NetworkMethodInfo<NetworkReceiveSystem, Entity, List<ComponentField>>>();
   readonly List<NetworkMethodInfo<NetworkReceiveSystem, Entity>> RemoveComponentOnDestroyEntityMethods = new List<NetworkMethodInfo<NetworkReceiveSystem, Entity>>();
-  readonly List<NetworkMethodInfo<NetworkReceiveSystem>> UpdateComponentsMethods = new List<NetworkMethodInfo<NetworkReceiveSystem>>();
+  readonly List<NetworkMethod<NetworkReceiveSystem>> UpdateComponentsMethods = new List<NetworkMethod<NetworkReceiveSystem>>();
   NetworkFactory networkFactory;
   readonly ReflectionUtility reflectionUtility = new ReflectionUtility();
   readonly List<GameObject> gameObjectsToDestroy = new List<GameObject>();
@@ -42,7 +42,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       SetComponentsMethods.Add(types[i], setInfo);
 
       var updateMethod = GetMethod(types[i], type, "UpdateComponent");
-      var updateInfo = new NetworkMethodInfo<NetworkReceiveSystem>(updateMethod);
+      var updateInfo = new NetworkMethod<NetworkReceiveSystem>(updateMethod);
       UpdateComponentsMethods.Add(updateInfo);
 
       var destroyMethod = GetMethod(types[i], type, "RemoveComponentOnDestroyEntity");
@@ -84,14 +84,14 @@ public class NetworkReceiveSystem : ComponentSystem {
   }
 
   void NetworkManager_OnPlayerLeft(int actorId) {
-    var group = GetComponentGroup(ComponentType.Create<NetworkSyncState>());
-    var components = group.GetComponentDataArray<NetworkSyncState>();
+    var group = GetComponentGroup(ComponentType.Create<SyncState>());
+    var components = group.GetComponentDataArray<SyncState>();
     var entities = group.GetEntityArray();
 
     for (int i = 0; i < entities.Length; i++) {
       if (components[i].actorId != actorId) continue;
 
-      PostUpdateCommands.RemoveComponent<NetworkSyncState>(entities[i]);
+      PostUpdateCommands.RemoveComponent<SyncState>(entities[i]);
       PostUpdateCommands.DestroyEntity(entities[i]);
 
       if (EntityManager.HasComponent<Transform>(entities[i])) {
@@ -104,12 +104,12 @@ public class NetworkReceiveSystem : ComponentSystem {
   }
 
   void NetworkManager_OnDisconnect() {
-    var group = GetComponentGroup(ComponentType.Create<NetworkSyncState>());
-    var components = group.GetComponentDataArray<NetworkSyncState>();
+    var group = GetComponentGroup(ComponentType.Create<SyncState>());
+    var components = group.GetComponentDataArray<SyncState>();
     var entities = group.GetEntityArray();
 
     for (int i = 0; i < entities.Length; i++) {
-      PostUpdateCommands.RemoveComponent<NetworkSyncState>(entities[i]);
+      PostUpdateCommands.RemoveComponent<SyncState>(entities[i]);
 
       if (components[i].actorId != networkManager.LocalPlayerID) {
         PostUpdateCommands.DestroyEntity(entities[i]);
@@ -132,8 +132,8 @@ public class NetworkReceiveSystem : ComponentSystem {
         || container.Entities.Any())) {
       Debug.Log("ReceiveNetworkUpdate: " + NetworkMessageUtility.ToString(container));
     }
-    var group = GetComponentGroup(ComponentType.Create<NetworkSyncState>());
-    var components = group.GetComponentDataArray<NetworkSyncState>();
+    var group = GetComponentGroup(ComponentType.Create<SyncState>());
+    var components = group.GetComponentDataArray<SyncState>();
     var entities = group.GetEntityArray();
     var map = new NativeHashMap<int, int>(entities.Length, Allocator.Temp);
 
@@ -150,7 +150,7 @@ public class NetworkReceiveSystem : ComponentSystem {
         .GetEntityFactoryMethod(addedEntities[i].InstanceId)
         .Invoke(EntityManager);
 
-      var state = new NetworkSyncState {
+      var state = new SyncState {
         actorId = addedEntities[i].Id.ActorId,
         networkId = addedEntities[i].Id.NetworkId,
       };
@@ -175,7 +175,7 @@ public class NetworkReceiveSystem : ComponentSystem {
       int hash = GetHash(removedEntities[i].ActorId, removedEntities[i].NetworkId);
       if (map.TryGetValue(hash, out int index)) {
         var entity = entities[index];
-        PostUpdateCommands.RemoveComponent<NetworkSyncState>(entity);
+        PostUpdateCommands.RemoveComponent<SyncState>(entity);
         PostUpdateCommands.DestroyEntity(entity);
 
         if (EntityManager.HasComponent<Transform>(entity)) {

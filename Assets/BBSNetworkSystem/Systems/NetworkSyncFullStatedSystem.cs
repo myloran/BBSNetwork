@@ -11,7 +11,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
 
   struct AddedEntityData {
     public ComponentDataArray<NetworkSync> syncs;
-    public ComponentDataArray<NetworkSyncState> states;
+    public ComponentDataArray<SyncState> states;
     public EntityArray entities;
     public readonly int Length;
   }
@@ -73,7 +73,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
   void Entities() {
     EntityArray entities = added.entities;
     ComponentDataArray<NetworkSync> networkSyncs = added.syncs;
-    ComponentDataArray<NetworkSyncState> networkSyncStates = added.states;
+    ComponentDataArray<SyncState> networkSyncStates = added.states;
     for (int i = 0; i < entities.Length; i++) {
       int instanceId = networkSyncs[i].instanceId;
 

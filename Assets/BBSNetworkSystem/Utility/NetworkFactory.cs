@@ -52,9 +52,9 @@ internal class NetworkFactory:IDisposable {
     internal Entity CreateNetworkComponentData<T>(Entity entityReference, int numberOfMembers) {
         Entity entity = NetworkEntityManager.CreateEntity(
             ComponentType.Create<NetworkComponentData<T>>(),
-            ComponentType.Create<NetworkComponentEntityReference>(),
+            ComponentType.Create<ComponentEntity>(),
             ComponentType.FixedArray(typeof(int), numberOfMembers*2)); // 2x because of history
-        NetworkEntityManager.SetComponentData(entity, new NetworkComponentEntityReference { Index = entityReference.Index, Version = entityReference.Version });
+        NetworkEntityManager.SetComponentData(entity, new ComponentEntity { Index = entityReference.Index, Version = entityReference.Version });
 
         return entity;
     }
