@@ -3,7 +3,7 @@ using UnityEngine;
 
 [Sync]
 public struct Position : IComponentData {
-    [FieldSync(lerpDamp: 0.9f, jumpThreshold: 0)]
+    [SyncField(lerpDamp: 0.9f, jumpThreshold: 0)]
     [NetSyncSubMember("x")]
     [NetSyncSubMember("y")]
     [NetSyncSubMember("z")]

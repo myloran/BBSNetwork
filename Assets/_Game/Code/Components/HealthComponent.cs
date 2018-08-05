@@ -5,7 +5,7 @@ using Unity.Entities;
 [Serializable]
 public struct Health : IComponentData {
 
-    [FieldSync]
+    [SyncField]
     public int value;
 }
 public class HealthComponent : ComponentDataWrapper<Health> { }

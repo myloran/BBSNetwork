@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Unity.Entities;
 
-public delegate Entity NetworkInstantiationHandlerDelegate(EntityManager entityManager);
+public delegate Entity SpawnDelegate(EntityManager entityManager);
 internal delegate void RefAction<S, T>(ref S instance, T value);
 internal delegate T RefFunc<S, T>(ref S instance);
 
@@ -282,7 +282,7 @@ internal class ReflectionUtility {
   readonly Dictionary<int, ComponentType> idTypes = new Dictionary<int, ComponentType>();
   readonly Dictionary<ComponentType, int> FieldCounts = new Dictionary<ComponentType, int>();
   //public static readonly MethodInfo[] NetworkFactoryMethods;
-  Dictionary<int, NetworkInstantiationHandlerDelegate> entityFactoryMethodMap = new Dictionary<int, NetworkInstantiationHandlerDelegate>();
+  Dictionary<int, SpawnDelegate> entityFactoryMethodMap = new Dictionary<int, SpawnDelegate>();
 
   public ReflectionUtility() {
     byte id = 0;
@@ -306,28 +306,37 @@ internal class ReflectionUtility {
           componentTypes.Add(type);
         }
 
-        if (type.GetCustomAttribute<SpawnFactoryAttribute>() != null) {
-          //networkFactoryMethods.AddRange(type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(NetworkInstantiatorAttribute), false)));
-          var methods = type
-            .GetMethods()
-            .Where(_ => _.IsDefined(typeof(SpawnAttribute), false))
-            .ToArray();
-
-          foreach (var method in methods) {
-            NetworkInstantiationHandlerDelegate networkInstantiationHandlerDelegate = null;
-            try {
-              networkInstantiationHandlerDelegate = (NetworkInstantiationHandlerDelegate)Delegate.CreateDelegate(typeof(NetworkInstantiationHandlerDelegate), method);
-            } catch (Exception ex) {
-              throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", method.Name));
-            }
-            RegisterEntityFactoryMethod(method.GetCustomAttribute<SpawnAttribute>().InstanceId, networkInstantiationHandlerDelegate);
-          }
-        }
+        FindSpawns(type);
       }
     }
 
     ComponentTypes = componentTypes.ToArray();
     //NetworkFactoryMethods = networkFactoryMethods.ToArray();
+  }
+
+  void FindSpawns(Type type) {
+    if (type.GetCustomAttribute<SpawnFactoryAttribute>() != null) {
+      //networkFactoryMethods.AddRange(type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(NetworkInstantiatorAttribute), false)));
+      var methods = type
+        .GetMethods()
+        .Where(_ => _.IsDefined(typeof(SpawnAttribute), false))
+        .ToArray();
+
+      foreach (var method in methods) {
+        SpawnDelegate spawn = null;
+
+        try {
+          spawn = (SpawnDelegate)Delegate.CreateDelegate(
+            typeof(SpawnDelegate),
+            method);
+        } catch (Exception) {
+          throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", method.Name));
+        }
+
+        int instanceId = method.GetCustomAttribute<SpawnAttribute>().InstanceId;
+        RegisterSpawn(instanceId, spawn);
+      }
+    }
   }
 
   List<NetworkField> FindFields(Type type) {
@@ -336,7 +345,7 @@ internal class ReflectionUtility {
     var members = type
       .GetMembers()
       .OrderBy((_) => _.Name)
-      .Where(_ => _.IsDefined(typeof(FieldSyncAttribute), false))
+      .Where(_ => _.IsDefined(typeof(SyncFieldAttribute), false))
       .ToArray();
 
     foreach (var member in members) {
@@ -346,7 +355,7 @@ internal class ReflectionUtility {
         .MakeGenericType(type, fieldType);
 
       var fieldAttribute = member
-        .GetCustomAttribute<FieldSyncAttribute>(false);
+        .GetCustomAttribute<SyncFieldAttribute>(false);
 
       var field = (NetworkField)Activator
         .CreateInstance(fieldGenericType, member, fieldAttribute);
@@ -404,7 +413,6 @@ internal class ReflectionUtility {
   }
 
   public ReflectionUtility(Assembly assembly) {
-
     byte componentTypeId = 0;
     var componentTypes = new List<ComponentType>();
     List<Type> types = new List<Type>(assembly.GetTypes());
@@ -418,14 +426,14 @@ internal class ReflectionUtility {
 
         int numberOfMembers = 0;
         List<NetworkField> networkMemberInfos = new List<NetworkField>();
-        MemberInfo[] memberInfos = type.GetMembers().OrderBy((x) => x.Name).Where(memberInfo => memberInfo.IsDefined(typeof(FieldSyncAttribute), false)).ToArray();
+        MemberInfo[] memberInfos = type.GetMembers().OrderBy((x) => x.Name).Where(memberInfo => memberInfo.IsDefined(typeof(SyncFieldAttribute), false)).ToArray();
         for (int i = 0; i < memberInfos.Length; i++) {
           MemberInfo memberInfo = memberInfos[i];
 
           Type networkMemberInfoType = typeof(NetworkField<,>);
           Type mainMemberInfoTypeType = memberInfo.MemberType == MemberTypes.Field ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
           Type mainMemberInfoGenericType = networkMemberInfoType.MakeGenericType(type, mainMemberInfoTypeType);
-          FieldSyncAttribute netSyncMemberAttribute = memberInfo.GetCustomAttribute<FieldSyncAttribute>(false);
+          SyncFieldAttribute netSyncMemberAttribute = memberInfo.GetCustomAttribute<SyncFieldAttribute>(false);
           NetworkField mainMemberInfo = (NetworkField)Activator.CreateInstance(mainMemberInfoGenericType, memberInfo, netSyncMemberAttribute);
           NetSyncSubMemberAttribute[] netSyncSubMemberAttributes = memberInfo.GetCustomAttributes<NetSyncSubMemberAttribute>(false).ToArray();
 
@@ -467,13 +475,13 @@ internal class ReflectionUtility {
       if (type.GetCustomAttribute<SpawnFactoryAttribute>() != null) {
         MethodInfo[] methodInfos = type.GetMethods().Where(methodInfo => methodInfo.IsDefined(typeof(SpawnAttribute), false)).ToArray();
         foreach (MethodInfo methodInfo in methodInfos) {
-          NetworkInstantiationHandlerDelegate networkInstantiationHandlerDelegate = null;
+          SpawnDelegate networkInstantiationHandlerDelegate = null;
           try {
-            networkInstantiationHandlerDelegate = (NetworkInstantiationHandlerDelegate)Delegate.CreateDelegate(typeof(NetworkInstantiationHandlerDelegate), methodInfo);
+            networkInstantiationHandlerDelegate = (SpawnDelegate)Delegate.CreateDelegate(typeof(SpawnDelegate), methodInfo);
           } catch (Exception ex) {
             throw new Exception(string.Format("Wrong signature for {0}. Signature requires static Entity {0}(EntityManager)", methodInfo.Name));
           }
-          RegisterEntityFactoryMethod(methodInfo.GetCustomAttribute<SpawnAttribute>().InstanceId, networkInstantiationHandlerDelegate);
+          RegisterSpawn(methodInfo.GetCustomAttribute<SpawnAttribute>().InstanceId, networkInstantiationHandlerDelegate);
         }
       }
     }
@@ -482,11 +490,11 @@ internal class ReflectionUtility {
     //NetworkFactoryMethods = networkFactoryMethods.ToArray();
   }
 
-  public void RegisterEntityFactoryMethod(int id, NetworkInstantiationHandlerDelegate networkInstantiationHandler) {
+  public void RegisterSpawn(int id, SpawnDelegate networkInstantiationHandler) {
     entityFactoryMethodMap.Add(id, networkInstantiationHandler);
   }
 
-  public NetworkInstantiationHandlerDelegate GetEntityFactoryMethod(int id) {
+  public SpawnDelegate GetEntityFactoryMethod(int id) {
     try {
       return entityFactoryMethodMap[id];
     } catch {

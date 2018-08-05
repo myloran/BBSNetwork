@@ -1,7 +1,7 @@
 ﻿using System;
 /// <summary>
 /// This attribute signs that a subfield of the current field will be synchronized through the network. 
-/// The containing class also requires the <see cref="SyncAttribute"/> and <see cref="FieldSyncAttribute"/>
+/// The containing class also requires the <see cref="SyncAttribute"/> and <see cref="SyncFieldAttribute"/>
 /// </summary>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = true, Inherited = false)]
 public sealed class NetSyncSubMemberAttribute : NetSyncBaseAttribute {
@@ -9,7 +9,7 @@ public sealed class NetSyncSubMemberAttribute : NetSyncBaseAttribute {
     public readonly bool OverriddenValues;
   /// <summary>
   /// This attribute signs that the subfield of the field will be synchronized through the network. 
-  /// The containing class also requires the <see cref="SyncAttribute"/> and <see cref="FieldSyncAttribute"/>
+  /// The containing class also requires the <see cref="SyncAttribute"/> and <see cref="SyncFieldAttribute"/>
   /// </summary>
   /// <param name="memberName">the name of the subfield</param>
   /// <param name="lerpSpeed">use to smoothly interpolate the current value and the latest network value</param>
