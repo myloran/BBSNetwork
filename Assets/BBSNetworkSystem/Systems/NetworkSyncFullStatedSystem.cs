@@ -78,7 +78,7 @@ public class NetworkSyncFullStatedSystem : ComponentSystem {
       int instanceId = networkSyncs[i].instanceId;
 
       Entity entity = entities[i];
-      NetworkEntityData networkEntityData = new NetworkEntityData {
+      NetworkEntity networkEntityData = new NetworkEntity {
         InstanceId = networkSyncs[i].instanceId,
 
         Id = new EntityId {

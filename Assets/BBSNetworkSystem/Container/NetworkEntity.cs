@@ -3,15 +3,12 @@ using System.Collections.Generic;
 
 [ProtoContract]
 public class NetworkEntity {
-  [ProtoMember(1, DataFormat = DataFormat.ZigZag)]
-  public EntityId Id;
+    [ProtoMember(1, IsPacked = true, DataFormat = DataFormat.ZigZag)]
+    public int InstanceId;
 
-  [ProtoMember(2, DataFormat = DataFormat.ZigZag)]
-  public List<NetworkComponent> AddedComponents = new List<NetworkComponent>(10);
-
-  [ProtoMember(3, DataFormat = DataFormat.ZigZag)]
-  public List<int> RemovedComponents = new List<int>(10);
-
-  [ProtoMember(4, DataFormat = DataFormat.ZigZag)]
-  public List<NetworkComponent> Components = new List<NetworkComponent>(100);
+    [ProtoMember(2, DataFormat = DataFormat.ZigZag)]
+    public EntityId Id;
+    
+    [ProtoMember(3, DataFormat = DataFormat.ZigZag)]
+    public List<NetworkComponent> Components = new List<NetworkComponent>(100);
 }

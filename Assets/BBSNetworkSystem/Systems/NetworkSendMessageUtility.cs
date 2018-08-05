@@ -3,9 +3,9 @@ using Unity.Entities;
 
 public class NetworkSendMessageUtility {
   public readonly NetworkSyncDataContainer Container = new NetworkSyncDataContainer();
-  readonly Dictionary<Entity, NetworkEntity> EntityContainers = new Dictionary<Entity, NetworkEntity>();
+  readonly Dictionary<Entity, SyncEntity> SyncEntities = new Dictionary<Entity, SyncEntity>();
 
-  public void AddEntity(NetworkEntityData networkEntityData) {
+  public void AddEntity(NetworkEntity networkEntityData) {
     Container.AddedEntities.Add(networkEntityData);
   }
 
@@ -43,24 +43,24 @@ public class NetworkSendMessageUtility {
       .Components.AddRange(componentDataContainers);
   }
 
-  NetworkEntity GetEntity(Entity entity, int actorId, int networkId) {
-    if (!EntityContainers.TryGetValue(entity, out NetworkEntity container)) {
-      container = new NetworkEntity() {
+  SyncEntity GetEntity(Entity entity, int actorId, int networkId) {
+    if (!SyncEntities.TryGetValue(entity, out SyncEntity syncEntity)) {
+      syncEntity = new SyncEntity() {
         Id = new EntityId() {
           ActorId = actorId,
           NetworkId = networkId,
         }
       };
-      Container.Entities.Add(container);
-      EntityContainers.Add(entity, container);
+      Container.Entities.Add(syncEntity);
+      SyncEntities[entity] = syncEntity;
     }
-    return container;
+    return syncEntity;
   }
 
   public void Reset() {
     Container.AddedEntities.Clear();
     Container.RemovedEntities.Clear();
     Container.Entities.Clear();
-    EntityContainers.Clear();
+    SyncEntities.Clear();
   }
 }

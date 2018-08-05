@@ -139,7 +139,7 @@ public class NetworkSendSystem : ComponentSystem {
             PostUpdateCommands.AddComponent(entity, component);
             PostUpdateCommands.AddComponent(entity, new NetworktOwner());
 
-            NetworkEntityData networkEntityData = new NetworkEntityData {
+            NetworkEntity networkEntityData = new NetworkEntity {
                 InstanceId = networkSyncs[i].instanceId,
 
                 Id = new EntityId {
