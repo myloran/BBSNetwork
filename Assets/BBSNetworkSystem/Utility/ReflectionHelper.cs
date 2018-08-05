@@ -298,74 +298,12 @@ internal class ReflectionUtility {
       foreach (var type in types) {
         if (type.GetCustomAttribute<NetSyncAttribute>() != null) {
           id++;
+          var fields = FindFields(type);
           typeIds.Add(type, id);
           idTypes.Add(id, type);
-          componentTypes.Add(type);
-
-          int fieldsCount = 0;
-          var fields = new List<NetworkField>();
-
-          var members = type
-            .GetMembers()
-            .OrderBy((_) => _.Name)
-            .Where(_ => _.IsDefined(typeof(FieldSyncAttribute), false))
-            .ToArray();
-
-          foreach (var member in members) {
-            var fieldType = GetMemberType(member);
-
-            var fieldGenericType = typeof(NetworkField<,>)
-              .MakeGenericType(type, fieldType);
-
-            var fieldAttribute = member
-              .GetCustomAttribute<FieldSyncAttribute>(false);
-
-            var field = (NetworkField)Activator
-              .CreateInstance(fieldGenericType, member, fieldAttribute);
-
-            var subFieldAttributes = member
-              .GetCustomAttributes<NetSyncSubMemberAttribute>(false)
-              .ToArray();
-
-            fieldsCount += subFieldAttributes.Length;
-
-            foreach (var attribute in subFieldAttributes) {
-              if (!attribute.OverriddenValues)
-                attribute.SetValuesFrom(fieldAttribute);
-
-              var isFound = false;
-
-              var subMembers = fieldType
-                .GetMembers()
-                .OrderBy(x => x.Name);
-
-              foreach (var subMember in subMembers) {
-                if (subMember.Name.Equals(attribute.MemberName)) {
-                  var subFieldType = GetMemberType(subMember);
-
-                  var subFieldGenericType = typeof(NetworkField<,,>)
-                    .MakeGenericType(type, fieldType, subFieldType);
-
-                  var subField = (NetworkField)Activator
-                    .CreateInstance(subFieldGenericType, subMember, field, attribute);
-
-                  fields.Add(subField);
-                  isFound = true;
-                  break;
-                }
-              }
-
-              if (!isFound)
-                throw new MissingMemberException(attribute.MemberName);
-            }
-
-            if (subFieldAttributes.Length == 0) {
-              fieldsCount++;
-              fields.Add(field);
-            }
-          }
           cashedFields.Add(type, fields.ToArray());
-          FieldCounts.Add(type, fieldsCount);
+          FieldCounts.Add(type, fields.Count);
+          componentTypes.Add(type);
         }
 
         if (type.GetCustomAttribute<NetworkEntityFactoryAttribute>() != null) {
@@ -386,6 +324,73 @@ internal class ReflectionUtility {
 
     ComponentTypes = componentTypes.ToArray();
     //NetworkFactoryMethods = networkFactoryMethods.ToArray();
+  }
+
+  List<NetworkField> FindFields(Type type) {
+    var fields = new List<NetworkField>();
+
+    var members = type
+      .GetMembers()
+      .OrderBy((_) => _.Name)
+      .Where(_ => _.IsDefined(typeof(FieldSyncAttribute), false))
+      .ToArray();
+
+    foreach (var member in members) {
+      var fieldType = GetMemberType(member);
+
+      var fieldGenericType = typeof(NetworkField<,>)
+        .MakeGenericType(type, fieldType);
+
+      var fieldAttribute = member
+        .GetCustomAttribute<FieldSyncAttribute>(false);
+
+      var field = (NetworkField)Activator
+        .CreateInstance(fieldGenericType, member, fieldAttribute);
+
+      var subFieldAttributes = member
+        .GetCustomAttributes<NetSyncSubMemberAttribute>(false)
+        .ToArray();
+
+      foreach (var attribute in subFieldAttributes) {
+        if (!attribute.OverriddenValues)
+          attribute.SetValuesFrom(fieldAttribute);
+
+        var subField = FindSubField(type, fieldType, field, attribute); //can throw
+        fields.Add(subField);
+      }
+
+      if (subFieldAttributes.Length == 0) {
+        fields.Add(field);
+      }
+    }
+
+    return fields;
+  }
+
+  NetworkField FindSubField(
+      Type type, 
+      Type fieldType, 
+      NetworkField field, 
+      NetSyncSubMemberAttribute attribute
+  ) {
+    var members = fieldType
+      .GetMembers()
+      .OrderBy(x => x.Name);
+
+    foreach (var member in members) {
+      if (!member.Name.Equals(attribute.MemberName)) continue;
+
+      var subFieldType = GetMemberType(member);
+
+      var subFieldGenericType = typeof(NetworkField<,,>)
+        .MakeGenericType(type, fieldType, subFieldType);
+
+      var subField = (NetworkField)Activator
+        .CreateInstance(subFieldGenericType, member, field, attribute);
+
+      return subField;
+    }
+    throw new MissingMemberException(attribute.MemberName);
   }
 
   Type GetMemberType(MemberInfo member) {
