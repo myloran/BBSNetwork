@@ -193,7 +193,7 @@ public class NetworkSendSystem : ComponentSystem {
         componentDataContainer = null;
         if (EntityManager.HasComponent<T>(entity)) {
             ComponentType componentType = ComponentType.Create<T>();
-            int numberOfMembers = reflectionUtility.GetFieldCount(componentType.GetManagedType());
+            int numberOfMembers = reflectionUtility.GetFieldsCount(componentType.GetManagedType());
             Entity networkDataEntity = networkFactory.CreateNetworkComponentData<T>(entity, numberOfMembers);
             NativeArray<int> values = networkFactory.NetworkEntityManager.GetFixedArray<int>(networkDataEntity);
             PostUpdateCommands.AddComponent(entity, new NetworkComponentState<T>());
@@ -246,7 +246,7 @@ public class NetworkSendSystem : ComponentSystem {
             ownNetworkSendMessageUtility.AddComponent(entities[i], networkSyncState.actorId, networkSyncState.networkId, componentData);
             AllNetworkSendMessageUtility.AddComponent(entities[i], networkSyncState.actorId, networkSyncState.networkId, componentData);
 
-            int numberOfMembers = reflectionUtility.GetFieldCount(componentType.GetManagedType());
+            int numberOfMembers = reflectionUtility.GetFieldsCount(componentType.GetManagedType());
             networkFactory.CreateNetworkComponentData<T>(entities[i], numberOfMembers);
             PostUpdateCommands.AddComponent(entities[i], new NetworkComponentState<T>());
         }

@@ -232,7 +232,7 @@ public class NetworkReceiveSystem : ComponentSystem {
 
   void AddComponent<T>(Entity entity, List<ComponentField> memberDataContainers) where T : struct, IComponentData {
     //Debug.Log(typeof(T));
-    int numberOfMembers = reflectionUtility.GetFieldCount(typeof(T));
+    int numberOfMembers = reflectionUtility.GetFieldsCount(typeof(T));
     var infos = reflectionUtility.GetFields(ComponentType.Create<T>());
     if (!EntityManager.HasComponent<T>(entity)) {
       T component = new T();

@@ -6,8 +6,8 @@ using System.Reflection;
 using Unity.Entities;
 
 public delegate Entity SpawnDelegate(EntityManager entityManager);
-internal delegate void RefAction<S, T>(ref S instance, T value);
-internal delegate T RefFunc<S, T>(ref S instance);
+internal delegate void SetterDelegate<S, T>(ref S instance, T value);
+internal delegate T GetterDelegate<S, T>(ref S instance);
 
 internal abstract class NetworkField { }
 
@@ -29,8 +29,8 @@ internal abstract class NetworkField<OBJ> : NetworkField {
 }
 
 internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
-  public readonly RefFunc<OBJ, TYPE> GetValueDelegate;
-  public readonly RefAction<OBJ, TYPE> SetValueDelegate;
+  public readonly GetterDelegate<OBJ, TYPE> GetValueDelegate;
+  public readonly SetterDelegate<OBJ, TYPE> SetValueDelegate;
   //private readonly MemberInfo memberInfo;
   readonly NetworkField parent;
   NetworkMath networkMath;
@@ -42,17 +42,17 @@ internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
     //Debug.Log(typeof(OBJ) + " --- " + typeof(TYPE));
     if (info.MemberType == MemberTypes.Field) {
       var fieldInfo = (FieldInfo)info;
-      GetValueDelegate = NetworkMemberInfoUtility.CreateGetter<OBJ, TYPE>(fieldInfo);
-      SetValueDelegate = NetworkMemberInfoUtility.CreateSetter<OBJ, TYPE>(fieldInfo);
+      GetValueDelegate = PropertyReflection.CreateGetter<OBJ, TYPE>(fieldInfo);
+      SetValueDelegate = PropertyReflection.CreateSetter<OBJ, TYPE>(fieldInfo);
 
     } else if (info.MemberType == MemberTypes.Property) {
       var propertyInfo = (PropertyInfo)info;
 
-      GetValueDelegate = (RefFunc<OBJ, TYPE>)Delegate.CreateDelegate(
+      GetValueDelegate = (GetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(
         typeof(Func<OBJ, TYPE>),
         propertyInfo.GetGetMethod());
 
-      SetValueDelegate = (RefAction<OBJ, TYPE>)Delegate.CreateDelegate(
+      SetValueDelegate = (SetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(
         typeof(Action<OBJ, TYPE>),
         propertyInfo.GetSetMethod());
 
@@ -106,8 +106,8 @@ internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
 }
 
 internal sealed class NetworkField<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_OBJ> {
-  public readonly RefFunc<OBJ, TYPE> GetValueDelegate;
-  public readonly RefAction<OBJ, TYPE> SetValueDelegate;
+  public readonly GetterDelegate<OBJ, TYPE> GetValueDelegate;
+  public readonly SetterDelegate<OBJ, TYPE> SetValueDelegate;
   //private readonly MemberInfo memberInfo;
   readonly NetworkField<Parent_OBJ, OBJ> parent;
   NetworkMath networkMath;
@@ -121,13 +121,13 @@ internal sealed class NetworkField<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_
     //Debug.Log(typeof(Parent_OBJ) + " --- " + typeof(OBJ) + " --- " + typeof(TYPE));
     if (info.MemberType == MemberTypes.Field) {
       var fieldInfo = (FieldInfo)info;
-      GetValueDelegate = NetworkMemberInfoUtility.CreateGetter<OBJ, TYPE>(fieldInfo);
-      SetValueDelegate = NetworkMemberInfoUtility.CreateSetter<OBJ, TYPE>(fieldInfo);
+      GetValueDelegate = PropertyReflection.CreateGetter<OBJ, TYPE>(fieldInfo);
+      SetValueDelegate = PropertyReflection.CreateSetter<OBJ, TYPE>(fieldInfo);
 
     } else if (info.MemberType == MemberTypes.Property) {
       var propertyInfo = (PropertyInfo)info;
-      GetValueDelegate = (RefFunc<OBJ, TYPE>)Delegate.CreateDelegate(typeof(RefFunc<OBJ, TYPE>), propertyInfo.GetGetMethod());
-      SetValueDelegate = (RefAction<OBJ, TYPE>)Delegate.CreateDelegate(typeof(RefAction<OBJ, TYPE>), propertyInfo.GetSetMethod());
+      GetValueDelegate = (GetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(typeof(GetterDelegate<OBJ, TYPE>), propertyInfo.GetGetMethod());
+      SetValueDelegate = (SetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(typeof(SetterDelegate<OBJ, TYPE>), propertyInfo.GetSetMethod());
 
     } else {
       throw new NotImplementedException(info.MemberType.ToString());
@@ -236,8 +236,8 @@ internal sealed class NetworkInOutMethodInfo<T, RefParam, OutParam> {
 }
 
 
-internal static class NetworkMemberInfoUtility {
-  public static RefFunc<S, T> CreateGetter<S, T>(FieldInfo field) {
+internal static class PropertyReflection {
+  public static GetterDelegate<S, T> CreateGetter<S, T>(FieldInfo field) {
     var instance = Expression.Parameter(
       typeof(S).MakeByRefType(), 
       "instance");
@@ -246,14 +246,14 @@ internal static class NetworkMemberInfoUtility {
       instance, 
       field);
 
-    var expr = Expression.Lambda<RefFunc<S, T>>(
+    var expr = Expression.Lambda<GetterDelegate<S, T>>(
       memberAccess, 
       instance);
 
     return expr.Compile();
   }
 
-  public static RefAction<S, T> CreateSetter<S, T>(FieldInfo field) {
+  public static SetterDelegate<S, T> CreateSetter<S, T>(FieldInfo field) {
     var instance = Expression.Parameter(
       typeof(S).MakeByRefType(), 
       "instance");
@@ -266,7 +266,7 @@ internal static class NetworkMemberInfoUtility {
       Expression.Field(instance, field),
       Expression.Convert(value, field.FieldType));
 
-    var expr = Expression.Lambda<RefAction<S, T>>(
+    var expr = Expression.Lambda<SetterDelegate<S, T>>(
       assign, 
       instance, 
       value);
@@ -283,7 +283,7 @@ internal class ReflectionUtility {
   readonly Dictionary<int, ComponentType> idTypes = new Dictionary<int, ComponentType>();
   readonly Dictionary<ComponentType, int> FieldCounts = new Dictionary<ComponentType, int>();
   //public static readonly MethodInfo[] NetworkFactoryMethods;
-  Dictionary<int, SpawnDelegate> entityFactoryMethodMap = new Dictionary<int, SpawnDelegate>();
+  Dictionary<int, SpawnDelegate> spawns = new Dictionary<int, SpawnDelegate>();
   byte id;
 
   public ReflectionUtility() {
@@ -428,12 +428,12 @@ internal class ReflectionUtility {
   }
 
   void RegisterSpawn(int id, SpawnDelegate spawn) {
-    entityFactoryMethodMap.Add(id, spawn);
+    spawns.Add(id, spawn);
   }
 
   public SpawnDelegate GetSpawn(int id) {
     try {
-      return entityFactoryMethodMap[id];
+      return spawns[id];
     } catch {
       throw new NetworkEntityFactoryMethodNotFoundException(id);
     }
@@ -451,7 +451,7 @@ internal class ReflectionUtility {
     return idTypes[id];
   }
 
-  public int GetFieldCount(Type type) {
+  public int GetFieldsCount(Type type) {
     return FieldCounts[type];
   }
 }
