@@ -12,9 +12,9 @@ internal delegate T GetterDelegate<S, T>(ref S instance);
 internal abstract class NetworkField { }
 
 internal abstract class NetworkField<OBJ> : NetworkField {
-  public readonly NetSyncBaseAttribute syncAttribute;
+  public readonly SyncBaseAttribute syncAttribute;
 
-  public NetworkField(NetSyncBaseAttribute syncAttribute) {
+  public NetworkField(SyncBaseAttribute syncAttribute) {
     this.syncAttribute = syncAttribute;
   }
 
@@ -36,8 +36,8 @@ internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
   NetworkMath networkMath;
 
   public NetworkField(
-    MemberInfo info, 
-    NetSyncBaseAttribute syncAttribute) : base(syncAttribute
+    MemberInfo info,
+    SyncBaseAttribute syncAttribute) : base(syncAttribute
   ) {
     //Debug.Log(typeof(OBJ) + " --- " + typeof(TYPE));
     if (info.MemberType == MemberTypes.Field) {
@@ -77,8 +77,8 @@ internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
 
   public NetworkField(
       MemberInfo info, 
-      NetworkField parent, 
-      NetSyncBaseAttribute syncAttribute) : base(syncAttribute
+      NetworkField parent,
+      SyncBaseAttribute syncAttribute) : base(syncAttribute
   ) {
     this.parent = parent;
   }
@@ -115,7 +115,7 @@ internal sealed class NetworkField<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_
   public NetworkField(
       MemberInfo info,
       NetworkField parent,
-      NetSyncBaseAttribute syncAttribute) : base(syncAttribute
+      SyncBaseAttribute syncAttribute) : base(syncAttribute
   ) {
     this.parent = (NetworkField<Parent_OBJ, OBJ>)parent;
     //Debug.Log(typeof(Parent_OBJ) + " --- " + typeof(OBJ) + " --- " + typeof(TYPE));

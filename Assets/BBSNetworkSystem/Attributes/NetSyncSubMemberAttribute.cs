@@ -4,7 +4,7 @@
 /// The containing class also requires the <see cref="SyncAttribute"/> and <see cref="SyncFieldAttribute"/>
 /// </summary>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = true, Inherited = false)]
-public sealed class NetSyncSubMemberAttribute : NetSyncBaseAttribute {
+public sealed class NetSyncSubMemberAttribute : SyncBaseAttribute {
     public readonly string MemberName;
     public readonly bool OverriddenValues;
   /// <summary>

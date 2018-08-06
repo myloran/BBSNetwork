@@ -4,7 +4,7 @@
 /// The containing class also requires the <see cref="SyncAttribute"/>
 /// </summary>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-public sealed class SyncFieldAttribute : NetSyncBaseAttribute {
+public sealed class SyncFieldAttribute : SyncBaseAttribute {
   /// <summary>
   /// This attribute signs that the field will be synchronized through the network. 
   /// The containing class also requires the <see cref="SyncAttribute"/>

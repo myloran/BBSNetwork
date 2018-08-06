@@ -43,8 +43,8 @@ internal static class NetworkMathOld {
       return value;
 
     } else if (type == floatType) {
-      float newValue = (float)value / accuracy;
-      float currentValue = (float)fieldValue;
+      var newValue = (float)value / accuracy;
+      var currentValue = (float)fieldValue;
 
       if (jumpThreshold != 0
         && math.greaterThan(
