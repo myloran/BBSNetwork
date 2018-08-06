@@ -3,11 +3,12 @@ using Unity.Mathematics;
 
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
 public abstract class SyncBaseAttribute : Attribute {
-    public float LerpSpeed { get; private set; }
-    //public bool Reliable { get; private set; }
-    public int Accuracy { get; private set; }
-    public float JumpThreshold { get; private set; }
-    public bool InitOnly { get; private set; }
+  public float LerpSpeed { get; private set; }
+  //public bool Reliable { get; private set; }
+  public int Accuracy { get; private set; }
+  public float JumpThreshold { get; private set; }
+  public bool InitOnly { get; private set; }
+
   /// <summary>
   /// This attribute signs that the field will be synchronized through the network. 
   /// The containing class also requires the <see cref="SyncAttribute"/>
@@ -15,22 +16,19 @@ public abstract class SyncBaseAttribute : Attribute {
   /// <param name="lerpSpeed">use to smoothly interpolate the current value and the latest network value</param>
   /// <param name="reliable">send this field value reliable</param>
   /// <param name="accuracy">will only be applied to float fields</param>
-
   protected SyncBaseAttribute(float lerpSpeed, /*bool reliable,*/ int accuracy, float jumpThreshold, bool initOnly) {
-        LerpSpeed = lerpSpeed;
-        //Reliable = reliable;
-        Accuracy = (int)math.pow(10, accuracy);
-        JumpThreshold = jumpThreshold;
-        InitOnly = initOnly;
-    }
+    LerpSpeed = lerpSpeed;
+    //Reliable = reliable;
+    Accuracy = (int)math.pow(10, accuracy);
+    JumpThreshold = jumpThreshold;
+    InitOnly = initOnly;
+  }
 
-
-
-    internal void SetValuesFrom(SyncBaseAttribute other) {
-        LerpSpeed = other.LerpSpeed;
-        //Reliable = other.Reliable;
-        Accuracy = other.Accuracy;
-        JumpThreshold = other.JumpThreshold;
-        InitOnly = other.InitOnly;
-    }
+  internal void SetValuesFrom(SyncBaseAttribute other) {
+    LerpSpeed = other.LerpSpeed;
+    //Reliable = other.Reliable;
+    Accuracy = other.Accuracy;
+    JumpThreshold = other.JumpThreshold;
+    InitOnly = other.InitOnly;
+  }
 }

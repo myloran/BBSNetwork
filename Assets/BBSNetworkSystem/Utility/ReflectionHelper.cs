@@ -106,8 +106,8 @@ internal sealed class NetworkField<OBJ, TYPE> : NetworkField<OBJ> {
 }
 
 internal sealed class NetworkField<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_OBJ> {
-  public readonly GetterDelegate<OBJ, TYPE> GetValueDelegate;
-  public readonly SetterDelegate<OBJ, TYPE> SetValueDelegate;
+  public readonly GetterDelegate<OBJ, TYPE> Getter;
+  public readonly SetterDelegate<OBJ, TYPE> Setter;
   //private readonly MemberInfo memberInfo;
   readonly NetworkField<Parent_OBJ, OBJ> parent;
   NetworkMath networkMath;
@@ -121,17 +121,24 @@ internal sealed class NetworkField<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_
     //Debug.Log(typeof(Parent_OBJ) + " --- " + typeof(OBJ) + " --- " + typeof(TYPE));
     if (info.MemberType == MemberTypes.Field) {
       var fieldInfo = (FieldInfo)info;
-      GetValueDelegate = PropertyReflection.CreateGetter<OBJ, TYPE>(fieldInfo);
-      SetValueDelegate = PropertyReflection.CreateSetter<OBJ, TYPE>(fieldInfo);
+      Getter = PropertyReflection.CreateGetter<OBJ, TYPE>(fieldInfo);
+      Setter = PropertyReflection.CreateSetter<OBJ, TYPE>(fieldInfo);
 
     } else if (info.MemberType == MemberTypes.Property) {
       var propertyInfo = (PropertyInfo)info;
-      GetValueDelegate = (GetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(typeof(GetterDelegate<OBJ, TYPE>), propertyInfo.GetGetMethod());
-      SetValueDelegate = (SetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(typeof(SetterDelegate<OBJ, TYPE>), propertyInfo.GetSetMethod());
+
+      Getter = (GetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(
+        typeof(GetterDelegate<OBJ, TYPE>), 
+        propertyInfo.GetGetMethod());
+
+      Setter = (SetterDelegate<OBJ, TYPE>)Delegate.CreateDelegate(
+        typeof(SetterDelegate<OBJ, TYPE>), 
+        propertyInfo.GetSetMethod());
 
     } else {
       throw new NotImplementedException(info.MemberType.ToString());
     }
+
     var typeType = typeof(TYPE);
 
     if (typeType == typeof(int)) {
@@ -158,19 +165,20 @@ internal sealed class NetworkField<Parent_OBJ, OBJ, TYPE> : NetworkField<Parent_
     OBJ obj = parent.GetValueDelegate(ref parentObj);
 
     var type = (TYPE)networkMath.IntegerToNative(
-      GetValueDelegate(ref obj), 
+      Getter(ref obj), 
       oldValue, 
       newValue, 
       deltaTimeFrame, 
       deltaTimeMessage);
 
-    SetValueDelegate(ref obj, type);
+    Setter(ref obj, type);
     parent.SetValueDelegate(ref parentObj, obj);
   }
 
   public override int GetValue(Parent_OBJ parentObj) {
     OBJ obj = parent.GetValueDelegate(ref parentObj);
-    return networkMath.NativeToInteger(GetValueDelegate(ref obj));
+
+    return networkMath.NativeToInteger(Getter(ref obj));
   }
 }
 
@@ -435,7 +443,7 @@ internal class ReflectionUtility {
     try {
       return spawns[id];
     } catch {
-      throw new NetworkEntityFactoryMethodNotFoundException(id);
+      throw new SpawnNotFoundException(id);
     }
   }
 
